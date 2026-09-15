@@ -1,0 +1,11 @@
+com/campus/farm/irrigation/IrrigationControllerIntegrationTest.class
+com/campus/farm/integration/IntegrationSyncServiceTest.class
+com/campus/farm/integration/IntegrationSyncServiceTest$1.class
+com/campus/farm/integration/IntegrationSyncServiceTest$2.class
+com/campus/farm/ApplicationContextTest.class
+com/campus/farm/DomainPersistenceTest.class
+com/campus/farm/irrigation/IrrigationOperationServiceTest$1.class
+com/campus/farm/irrigation/IrrigationOperationServiceTest.class
+com/campus/farm/MysqlConfigurationTest.class
+com/campus/farm/irrigation/IrrigationOperationServiceTest$RecordingPort.class
+com/campus/farm/auth/AuthenticationIntegrationTest.class

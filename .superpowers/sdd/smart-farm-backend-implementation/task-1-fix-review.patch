@@ -1,0 +1,309 @@
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/pom.xml backend/pom.xml
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/pom.xml	1970-01-01 08:00:00
++++ backend/pom.xml	2026-09-14 15:17:48
+@@ -0,0 +1,17 @@
++<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
++  <modelVersion>4.0.0</modelVersion>
++  <parent>
++    <groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>2.7.18</version><relativePath/>
++  </parent>
++  <groupId>com.campus</groupId><artifactId>smart-farm-backend</artifactId><version>0.0.1-SNAPSHOT</version>
++  <properties><java.version>1.8</java.version></properties>
++  <dependencies>
++    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
++    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency>
++    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-security</artifactId></dependency>
++    <dependency><groupId>com.h2database</groupId><artifactId>h2</artifactId><scope>runtime</scope></dependency>
++    <dependency><groupId>com.mysql</groupId><artifactId>mysql-connector-j</artifactId><scope>runtime</scope></dependency>
++    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
++  </dependencies>
++  <build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build>
++</project>
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/main/java/com/campus/farm/SmartFarmApplication.java backend/src/main/java/com/campus/farm/SmartFarmApplication.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/main/java/com/campus/farm/SmartFarmApplication.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/SmartFarmApplication.java	2026-09-14 15:18:42
+@@ -0,0 +1,11 @@
++package com.campus.farm;
++
++import org.springframework.boot.SpringApplication;
++import org.springframework.boot.autoconfigure.SpringBootApplication;
++
++@SpringBootApplication
++public class SmartFarmApplication {
++  public static void main(String[] args) {
++    SpringApplication.run(SmartFarmApplication.class, args);
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/main/java/com/campus/farm/auth/User.java backend/src/main/java/com/campus/farm/auth/User.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/main/java/com/campus/farm/auth/User.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/auth/User.java	2026-09-14 15:46:28
+@@ -0,0 +1,40 @@
++package com.campus.farm.auth;
++
++import com.fasterxml.jackson.annotation.JsonIgnore;
++import javax.persistence.Column;
++import javax.persistence.Entity;
++import javax.persistence.GeneratedValue;
++import javax.persistence.GenerationType;
++import javax.persistence.Id;
++import javax.persistence.Table;
++
++@Entity
++@Table(name = "farm_users")
++public class User {
++  @Id
++  @GeneratedValue(strategy = GenerationType.IDENTITY)
++  private Long id;
++
++  @Column(nullable = false, unique = true, length = 64)
++  private String username;
++
++  @Column(nullable = false, length = 100)
++  private String passwordHash;
++
++  @Column(nullable = false, length = 32)
++  private String role;
++
++  protected User() { }
++
++  public User(String username, String passwordHash, String role) {
++    this.username = username;
++    this.passwordHash = passwordHash;
++    this.role = role;
++  }
++
++  public Long getId() { return id; }
++  public String getUsername() { return username; }
++  @JsonIgnore
++  public String getPasswordHash() { return passwordHash; }
++  public String getRole() { return role; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/main/java/com/campus/farm/auth/UserRepository.java backend/src/main/java/com/campus/farm/auth/UserRepository.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/main/java/com/campus/farm/auth/UserRepository.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/auth/UserRepository.java	2026-09-14 15:18:42
+@@ -0,0 +1,8 @@
++package com.campus.farm.auth;
++
++import java.util.Optional;
++import org.springframework.data.jpa.repository.JpaRepository;
++
++public interface UserRepository extends JpaRepository<User, Long> {
++  Optional<User> findByUsername(String username);
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/main/java/com/campus/farm/config/DemoDataInitializer.java backend/src/main/java/com/campus/farm/config/DemoDataInitializer.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/main/java/com/campus/farm/config/DemoDataInitializer.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/config/DemoDataInitializer.java	2026-09-14 15:18:42
+@@ -0,0 +1,32 @@
++package com.campus.farm.config;
++
++import com.campus.farm.auth.User;
++import com.campus.farm.auth.UserRepository;
++import com.campus.farm.device.Device;
++import com.campus.farm.device.DeviceRepository;
++import org.springframework.boot.CommandLineRunner;
++import org.springframework.context.annotation.Bean;
++import org.springframework.context.annotation.Configuration;
++import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
++
++@Configuration
++public class DemoDataInitializer {
++  @Bean
++  CommandLineRunner seedDemoData(UserRepository users, DeviceRepository devices) {
++    return args -> {
++      BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
++      if (!users.findByUsername("admin").isPresent()) {
++        users.save(new User("admin", encoder.encode("admin123"), "ADMIN"));
++      }
++      if (!users.findByUsername("operator").isPresent()) {
++        users.save(new User("operator", encoder.encode("operator123"), "OPERATOR"));
++      }
++      if (!devices.findByDeviceCode("PV-001").isPresent()) {
++        devices.save(new Device("PV-001", "Solar Array", "PHOTOVOLTAIC", "ONLINE"));
++      }
++      if (!devices.findByDeviceCode("IRR-001").isPresent()) {
++        devices.save(new Device("IRR-001", "Irrigation Controller", "IRRIGATION", "ONLINE"));
++      }
++    };
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/main/java/com/campus/farm/device/Device.java backend/src/main/java/com/campus/farm/device/Device.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/main/java/com/campus/farm/device/Device.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/device/Device.java	2026-09-14 15:18:42
+@@ -0,0 +1,43 @@
++package com.campus.farm.device;
++
++import javax.persistence.Column;
++import javax.persistence.Entity;
++import javax.persistence.GeneratedValue;
++import javax.persistence.GenerationType;
++import javax.persistence.Id;
++import javax.persistence.Table;
++
++@Entity
++@Table(name = "devices")
++public class Device {
++  @Id
++  @GeneratedValue(strategy = GenerationType.IDENTITY)
++  private Long id;
++
++  @Column(nullable = false, unique = true, length = 64)
++  private String deviceCode;
++
++  @Column(nullable = false, length = 128)
++  private String name;
++
++  @Column(nullable = false, length = 32)
++  private String type;
++
++  @Column(nullable = false, length = 32)
++  private String status;
++
++  protected Device() { }
++
++  public Device(String deviceCode, String name, String type, String status) {
++    this.deviceCode = deviceCode;
++    this.name = name;
++    this.type = type;
++    this.status = status;
++  }
++
++  public Long getId() { return id; }
++  public String getDeviceCode() { return deviceCode; }
++  public String getName() { return name; }
++  public String getType() { return type; }
++  public String getStatus() { return status; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/main/java/com/campus/farm/device/DeviceRepository.java backend/src/main/java/com/campus/farm/device/DeviceRepository.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/main/java/com/campus/farm/device/DeviceRepository.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/device/DeviceRepository.java	2026-09-14 15:18:42
+@@ -0,0 +1,10 @@
++package com.campus.farm.device;
++
++import java.util.List;
++import java.util.Optional;
++import org.springframework.data.jpa.repository.JpaRepository;
++
++public interface DeviceRepository extends JpaRepository<Device, Long> {
++  Optional<Device> findByDeviceCode(String deviceCode);
++  List<Device> findByType(String type);
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/main/resources/application-mysql.yml backend/src/main/resources/application-mysql.yml
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/main/resources/application-mysql.yml	1970-01-01 08:00:00
++++ backend/src/main/resources/application-mysql.yml	2026-09-14 15:46:28
+@@ -0,0 +1,9 @@
++spring:
++  datasource:
++    url: ${DB_URL:jdbc:mysql://localhost:3306/smart_farm?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC}
++    username: ${DB_USERNAME:smart_farm}
++    password: ${DB_PASSWORD:}
++    driver-class-name: com.mysql.cj.jdbc.Driver
++  jpa:
++    hibernate:
++      ddl-auto: update
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/main/resources/application.yml backend/src/main/resources/application.yml
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/main/resources/application.yml	1970-01-01 08:00:00
++++ backend/src/main/resources/application.yml	2026-09-14 15:18:42
+@@ -0,0 +1,17 @@
++spring:
++  datasource:
++    url: ${H2_URL:jdbc:h2:mem:smart_farm;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
++    username: ${H2_USERNAME:sa}
++    password: ${H2_PASSWORD:}
++    driver-class-name: org.h2.Driver
++  jpa:
++    hibernate:
++      ddl-auto: update
++    open-in-view: false
++  h2:
++    console:
++      enabled: false
++
++server:
++  error:
++    include-message: never
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/test/java/com/campus/farm/ApplicationContextTest.java backend/src/test/java/com/campus/farm/ApplicationContextTest.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/test/java/com/campus/farm/ApplicationContextTest.java	1970-01-01 08:00:00
++++ backend/src/test/java/com/campus/farm/ApplicationContextTest.java	2026-09-14 15:17:48
+@@ -0,0 +1,14 @@
++package com.campus.farm;
++
++import static org.assertj.core.api.Assertions.assertThat;
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.context.ApplicationContext;
++
++@SpringBootTest
++class ApplicationContextTest {
++  @Autowired ApplicationContext context;
++
++  @Test void springContextStarts() { assertThat(context).isNotNull(); }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/test/java/com/campus/farm/DomainPersistenceTest.java backend/src/test/java/com/campus/farm/DomainPersistenceTest.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/test/java/com/campus/farm/DomainPersistenceTest.java	1970-01-01 08:00:00
++++ backend/src/test/java/com/campus/farm/DomainPersistenceTest.java	2026-09-14 15:45:25
+@@ -0,0 +1,41 @@
++package com.campus.farm;
++
++import static org.assertj.core.api.Assertions.assertThat;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import com.campus.farm.auth.User;
++import com.campus.farm.auth.UserRepository;
++import com.campus.farm.device.Device;
++import com.campus.farm.device.DeviceRepository;
++import java.util.Optional;
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.transaction.annotation.Transactional;
++import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
++
++@SpringBootTest
++@Transactional
++class DomainPersistenceTest {
++  @Autowired UserRepository users;
++  @Autowired DeviceRepository devices;
++
++  @Test void seedCreatesDemoUsersAndDevices() {
++    Optional<User> admin = users.findByUsername("admin");
++    Optional<User> operator = users.findByUsername("operator");
++    assertThat(admin).isPresent();
++    assertThat(admin.get().getRole()).isEqualTo("ADMIN");
++    assertThat(new BCryptPasswordEncoder().matches("admin123", admin.get().getPasswordHash())).isTrue();
++    assertThat(operator).isPresent();
++    assertThat(new BCryptPasswordEncoder().matches("operator123", operator.get().getPasswordHash())).isTrue();
++    assertThat(devices.count()).isGreaterThanOrEqualTo(2);
++  }
++
++  @Test void passwordHashIsNeverSerialized() throws Exception {
++    String json = new ObjectMapper().writeValueAsString(new User("operator", "secret-hash", "OPERATOR"));
++    assertThat(json).doesNotContain("passwordHash").doesNotContain("secret-hash");
++  }
++
++  @Test void devicesCanBeQueriedByType() {
++    assertThat(devices.findByType("PHOTOVOLTAIC")).isNotEmpty();
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/test/java/com/campus/farm/MysqlConfigurationTest.java backend/src/test/java/com/campus/farm/MysqlConfigurationTest.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.O9w9npo59c/src/test/java/com/campus/farm/MysqlConfigurationTest.java	1970-01-01 08:00:00
++++ backend/src/test/java/com/campus/farm/MysqlConfigurationTest.java	2026-09-14 15:45:25
+@@ -0,0 +1,19 @@
++package com.campus.farm;
++
++import static org.assertj.core.api.Assertions.assertThat;
++import java.util.Properties;
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
++import org.springframework.core.io.ClassPathResource;
++
++class MysqlConfigurationTest {
++  @Test void mysqlProfileUsesDocumentedDatabaseEnvironmentVariables() {
++    YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
++    yaml.setResources(new ClassPathResource("application-mysql.yml"));
++    Properties properties = yaml.getObject();
++
++    assertThat(properties.getProperty("spring.datasource.url")).startsWith("${DB_URL:");
++    assertThat(properties.getProperty("spring.datasource.username")).startsWith("${DB_USERNAME:");
++    assertThat(properties.getProperty("spring.datasource.password")).startsWith("${DB_PASSWORD:");
++  }
++}

@@ -1,0 +1,2090 @@
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/pom.xml backend/pom.xml
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/pom.xml	1970-01-01 08:00:00
++++ backend/pom.xml	2026-09-14 15:17:48
+@@ -0,0 +1,17 @@
++<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
++  <modelVersion>4.0.0</modelVersion>
++  <parent>
++    <groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-parent</artifactId><version>2.7.18</version><relativePath/>
++  </parent>
++  <groupId>com.campus</groupId><artifactId>smart-farm-backend</artifactId><version>0.0.1-SNAPSHOT</version>
++  <properties><java.version>1.8</java.version></properties>
++  <dependencies>
++    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
++    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-data-jpa</artifactId></dependency>
++    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-security</artifactId></dependency>
++    <dependency><groupId>com.h2database</groupId><artifactId>h2</artifactId><scope>runtime</scope></dependency>
++    <dependency><groupId>com.mysql</groupId><artifactId>mysql-connector-j</artifactId><scope>runtime</scope></dependency>
++    <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-test</artifactId><scope>test</scope></dependency>
++  </dependencies>
++  <build><plugins><plugin><groupId>org.springframework.boot</groupId><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build>
++</project>
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/SmartFarmApplication.java backend/src/main/java/com/campus/farm/SmartFarmApplication.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/SmartFarmApplication.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/SmartFarmApplication.java	2026-09-14 16:12:35
+@@ -0,0 +1,13 @@
++package com.campus.farm;
++
++import org.springframework.boot.SpringApplication;
++import org.springframework.boot.autoconfigure.SpringBootApplication;
++import org.springframework.scheduling.annotation.EnableScheduling;
++
++@SpringBootApplication
++@EnableScheduling
++public class SmartFarmApplication {
++  public static void main(String[] args) {
++    SpringApplication.run(SmartFarmApplication.class, args);
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/audit/AuditRecord.java backend/src/main/java/com/campus/farm/audit/AuditRecord.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/audit/AuditRecord.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/audit/AuditRecord.java	2026-09-14 17:08:58
+@@ -0,0 +1,47 @@
++package com.campus.farm.audit;
++
++import java.time.Instant;
++import javax.persistence.Column;
++import javax.persistence.Entity;
++import javax.persistence.GeneratedValue;
++import javax.persistence.GenerationType;
++import javax.persistence.Id;
++import javax.persistence.Table;
++
++@Entity
++@Table(name = "audit_records")
++public class AuditRecord {
++  @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
++  @Column(nullable = false, length = 64) private String actor;
++  @Column(nullable = false, length = 64) private String target;
++  @Column(nullable = false, length = 16) private String action;
++  @Column(nullable = false, length = 512) private String parameterSummary;
++  @Column(nullable = false, length = 32) private String commandResult;
++  @Column(nullable = false, length = 32) private String confirmation;
++  @Column(nullable = false, length = 512) private String outcomeDetail;
++  @Column(nullable = false) private Instant occurredAt;
++
++  protected AuditRecord() { }
++
++  public AuditRecord(String actor, String target, String action, String parameterSummary,
++      String commandResult, String confirmation, String outcomeDetail) {
++    this.actor = actor;
++    this.target = target;
++    this.action = action;
++    this.parameterSummary = parameterSummary;
++    this.commandResult = commandResult;
++    this.confirmation = confirmation;
++    this.outcomeDetail = outcomeDetail;
++    this.occurredAt = Instant.now();
++  }
++
++  public Long getId() { return id; }
++  public String getActor() { return actor; }
++  public String getTarget() { return target; }
++  public String getAction() { return action; }
++  public String getParameterSummary() { return parameterSummary; }
++  public String getCommandResult() { return commandResult; }
++  public String getConfirmation() { return confirmation; }
++  public String getOutcomeDetail() { return outcomeDetail; }
++  public Instant getOccurredAt() { return occurredAt; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/audit/AuditRecordRepository.java backend/src/main/java/com/campus/farm/audit/AuditRecordRepository.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/audit/AuditRecordRepository.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/audit/AuditRecordRepository.java	2026-09-14 17:08:58
+@@ -0,0 +1,5 @@
++package com.campus.farm.audit;
++
++import org.springframework.data.jpa.repository.JpaRepository;
++
++public interface AuditRecordRepository extends JpaRepository<AuditRecord, Long> { }
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/audit/AuditService.java backend/src/main/java/com/campus/farm/audit/AuditService.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/audit/AuditService.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/audit/AuditService.java	2026-09-14 17:08:58
+@@ -0,0 +1,16 @@
++package com.campus.farm.audit;
++
++import org.springframework.stereotype.Service;
++
++@Service
++public class AuditService {
++  private final AuditRecordRepository records;
++
++  public AuditService(AuditRecordRepository records) { this.records = records; }
++
++  public void record(String actor, String target, String action, String parameterSummary,
++      String commandResult, String confirmation, String outcomeDetail) {
++    records.save(new AuditRecord(actor, target, action, parameterSummary, commandResult,
++        confirmation, outcomeDetail));
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/auth/AuthController.java backend/src/main/java/com/campus/farm/auth/AuthController.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/auth/AuthController.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/auth/AuthController.java	2026-09-14 16:04:16
+@@ -0,0 +1,35 @@
++package com.campus.farm.auth;
++
++import com.campus.farm.auth.dto.LoginRequest;
++import com.campus.farm.auth.dto.LoginResponse;
++import com.campus.farm.auth.dto.UserResponse;
++import org.springframework.http.ResponseEntity;
++import org.springframework.security.core.Authentication;
++import org.springframework.web.bind.annotation.GetMapping;
++import org.springframework.web.bind.annotation.PostMapping;
++import org.springframework.web.bind.annotation.RequestBody;
++import org.springframework.web.bind.annotation.RequestMapping;
++import org.springframework.web.bind.annotation.RestController;
++
++@RestController
++@RequestMapping("/api/auth")
++public class AuthController {
++  private final AuthService auth;
++  private final TokenStore tokens;
++  public AuthController(AuthService auth, TokenStore tokens) { this.auth = auth; this.tokens = tokens; }
++
++  @PostMapping("/login")
++  public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
++    return auth.authenticate(request.getUsername(), request.getPassword())
++        .map(user -> ResponseEntity.ok(new LoginResponse(tokens.issue(user), new UserResponse(user))))
++        .orElseGet(() -> ResponseEntity.status(401).build());
++  }
++
++  @GetMapping("/me")
++  public UserResponse me(Authentication authentication) {
++    return new UserResponse((User) authentication.getDetails());
++  }
++
++  @GetMapping("/admin-test")
++  public String adminTest() { return "ok"; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/auth/AuthService.java backend/src/main/java/com/campus/farm/auth/AuthService.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/auth/AuthService.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/auth/AuthService.java	2026-09-14 16:04:16
+@@ -0,0 +1,22 @@
++package com.campus.farm.auth;
++
++import java.util.Optional;
++import org.springframework.security.crypto.password.PasswordEncoder;
++import org.springframework.stereotype.Service;
++
++@Service
++public class AuthService {
++  private final UserRepository users;
++  private final PasswordEncoder passwordEncoder;
++
++  public AuthService(UserRepository users, PasswordEncoder passwordEncoder) {
++    this.users = users;
++    this.passwordEncoder = passwordEncoder;
++  }
++
++  public Optional<User> authenticate(String username, String password) {
++    if (username == null || password == null) return Optional.empty();
++    return users.findByUsername(username)
++        .filter(user -> passwordEncoder.matches(password, user.getPasswordHash()));
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/auth/BearerTokenFilter.java backend/src/main/java/com/campus/farm/auth/BearerTokenFilter.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/auth/BearerTokenFilter.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/auth/BearerTokenFilter.java	2026-09-14 16:04:55
+@@ -0,0 +1,31 @@
++package com.campus.farm.auth;
++
++import java.io.IOException;
++import javax.servlet.FilterChain;
++import javax.servlet.ServletException;
++import javax.servlet.http.HttpServletRequest;
++import javax.servlet.http.HttpServletResponse;
++import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
++import org.springframework.security.core.authority.SimpleGrantedAuthority;
++import org.springframework.security.core.context.SecurityContextHolder;
++import org.springframework.web.filter.OncePerRequestFilter;
++
++public class BearerTokenFilter extends OncePerRequestFilter {
++  private final TokenStore tokens;
++  public BearerTokenFilter(TokenStore tokens) { this.tokens = tokens; }
++
++  @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
++      FilterChain chain) throws ServletException, IOException {
++    String header = request.getHeader("Authorization");
++    if (header != null && header.startsWith("Bearer ") && header.length() > 7) {
++      tokens.find(header.substring(7).trim()).ifPresent(user -> {
++        UsernamePasswordAuthenticationToken auth = new UsernamePasswordAuthenticationToken(
++            user.getUsername(), null,
++            java.util.Collections.singletonList(new SimpleGrantedAuthority("ROLE_" + user.getRole())));
++        auth.setDetails(user);
++        SecurityContextHolder.getContext().setAuthentication(auth);
++      });
++    }
++    chain.doFilter(request, response);
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/auth/TokenStore.java backend/src/main/java/com/campus/farm/auth/TokenStore.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/auth/TokenStore.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/auth/TokenStore.java	2026-09-14 16:04:16
+@@ -0,0 +1,26 @@
++package com.campus.farm.auth;
++
++import java.security.SecureRandom;
++import java.util.Base64;
++import java.util.Map;
++import java.util.Optional;
++import java.util.concurrent.ConcurrentHashMap;
++import org.springframework.stereotype.Component;
++
++@Component
++public class TokenStore {
++  private final SecureRandom random = new SecureRandom();
++  private final Map<String, User> tokens = new ConcurrentHashMap<>();
++
++  public String issue(User user) {
++    byte[] bytes = new byte[32];
++    random.nextBytes(bytes);
++    String token = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
++    tokens.put(token, user);
++    return token;
++  }
++
++  public Optional<User> find(String token) {
++    return token == null ? Optional.empty() : Optional.ofNullable(tokens.get(token));
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/auth/User.java backend/src/main/java/com/campus/farm/auth/User.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/auth/User.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/auth/User.java	2026-09-14 15:46:28
+@@ -0,0 +1,40 @@
++package com.campus.farm.auth;
++
++import com.fasterxml.jackson.annotation.JsonIgnore;
++import javax.persistence.Column;
++import javax.persistence.Entity;
++import javax.persistence.GeneratedValue;
++import javax.persistence.GenerationType;
++import javax.persistence.Id;
++import javax.persistence.Table;
++
++@Entity
++@Table(name = "farm_users")
++public class User {
++  @Id
++  @GeneratedValue(strategy = GenerationType.IDENTITY)
++  private Long id;
++
++  @Column(nullable = false, unique = true, length = 64)
++  private String username;
++
++  @Column(nullable = false, length = 100)
++  private String passwordHash;
++
++  @Column(nullable = false, length = 32)
++  private String role;
++
++  protected User() { }
++
++  public User(String username, String passwordHash, String role) {
++    this.username = username;
++    this.passwordHash = passwordHash;
++    this.role = role;
++  }
++
++  public Long getId() { return id; }
++  public String getUsername() { return username; }
++  @JsonIgnore
++  public String getPasswordHash() { return passwordHash; }
++  public String getRole() { return role; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/auth/UserRepository.java backend/src/main/java/com/campus/farm/auth/UserRepository.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/auth/UserRepository.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/auth/UserRepository.java	2026-09-14 15:18:42
+@@ -0,0 +1,8 @@
++package com.campus.farm.auth;
++
++import java.util.Optional;
++import org.springframework.data.jpa.repository.JpaRepository;
++
++public interface UserRepository extends JpaRepository<User, Long> {
++  Optional<User> findByUsername(String username);
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/auth/dto/LoginRequest.java backend/src/main/java/com/campus/farm/auth/dto/LoginRequest.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/auth/dto/LoginRequest.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/auth/dto/LoginRequest.java	2026-09-14 16:04:16
+@@ -0,0 +1,10 @@
++package com.campus.farm.auth.dto;
++
++public class LoginRequest {
++  private String username;
++  private String password;
++  public String getUsername() { return username; }
++  public void setUsername(String username) { this.username = username; }
++  public String getPassword() { return password; }
++  public void setPassword(String password) { this.password = password; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/auth/dto/LoginResponse.java backend/src/main/java/com/campus/farm/auth/dto/LoginResponse.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/auth/dto/LoginResponse.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/auth/dto/LoginResponse.java	2026-09-14 16:04:16
+@@ -0,0 +1,9 @@
++package com.campus.farm.auth.dto;
++
++public class LoginResponse {
++  private final String token;
++  private final UserResponse user;
++  public LoginResponse(String token, UserResponse user) { this.token = token; this.user = user; }
++  public String getToken() { return token; }
++  public UserResponse getUser() { return user; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/auth/dto/UserResponse.java backend/src/main/java/com/campus/farm/auth/dto/UserResponse.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/auth/dto/UserResponse.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/auth/dto/UserResponse.java	2026-09-14 16:04:16
+@@ -0,0 +1,15 @@
++package com.campus.farm.auth.dto;
++
++import com.campus.farm.auth.User;
++
++public class UserResponse {
++  private final Long id;
++  private final String username;
++  private final String role;
++  public UserResponse(User user) {
++    this.id = user.getId(); this.username = user.getUsername(); this.role = user.getRole();
++  }
++  public Long getId() { return id; }
++  public String getUsername() { return username; }
++  public String getRole() { return role; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/config/DemoDataInitializer.java backend/src/main/java/com/campus/farm/config/DemoDataInitializer.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/config/DemoDataInitializer.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/config/DemoDataInitializer.java	2026-09-14 17:25:20
+@@ -0,0 +1,46 @@
++package com.campus.farm.config;
++
++import com.campus.farm.auth.User;
++import com.campus.farm.auth.UserRepository;
++import com.campus.farm.device.Device;
++import com.campus.farm.device.DeviceRepository;
++import com.campus.farm.irrigation.IrrigationZone;
++import com.campus.farm.irrigation.IrrigationZoneRepository;
++import java.time.LocalTime;
++import org.springframework.boot.CommandLineRunner;
++import org.springframework.context.annotation.Bean;
++import org.springframework.context.annotation.Configuration;
++import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
++
++@Configuration
++public class DemoDataInitializer {
++  @Bean
++  CommandLineRunner seedDemoData(UserRepository users, DeviceRepository devices, IrrigationZoneRepository zones) {
++    return args -> {
++      BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
++      if (!users.findByUsername("admin").isPresent()) {
++        users.save(new User("admin", encoder.encode("admin123"), "ADMIN"));
++      }
++      if (!users.findByUsername("operator").isPresent()) {
++        users.save(new User("operator", encoder.encode("operator123"), "OPERATOR"));
++      }
++      if (!users.findByUsername("viewer").isPresent()) {
++        users.save(new User("viewer", encoder.encode("view123"), "VIEWER"));
++      }
++      if (!devices.findByDeviceCode("PV-001").isPresent()) {
++        devices.save(new Device("PV-001", "Solar Array", "PHOTOVOLTAIC", "ONLINE"));
++      }
++      if (!devices.findByDeviceCode("IRR-001").isPresent()) {
++        devices.save(new Device("IRR-001", "Irrigation Controller", "IRRIGATION", "ONLINE"));
++      }
++      if (!zones.findByZoneId("zone-1").isPresent()) {
++        zones.save(new IrrigationZone("zone-1", "Demo vegetable beds", "Vegetable beds", 30,
++            LocalTime.of(6, 0), LocalTime.of(22, 0)));
++      }
++      if (!zones.findByZoneId("zone-2").isPresent()) {
++        zones.save(new IrrigationZone("zone-2", "Demo orchard", "Orchard", 30,
++            LocalTime.of(6, 0), LocalTime.of(22, 0)));
++      }
++    };
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/config/SecurityConfig.java backend/src/main/java/com/campus/farm/config/SecurityConfig.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/config/SecurityConfig.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/config/SecurityConfig.java	2026-09-14 16:04:55
+@@ -0,0 +1,40 @@
++package com.campus.farm.config;
++
++import com.campus.farm.auth.BearerTokenFilter;
++import com.campus.farm.auth.TokenStore;
++import org.springframework.context.annotation.Bean;
++import org.springframework.context.annotation.Configuration;
++import org.springframework.security.config.annotation.web.builders.HttpSecurity;
++import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
++import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
++import org.springframework.security.config.http.SessionCreationPolicy;
++import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
++import org.springframework.security.crypto.password.PasswordEncoder;
++import org.springframework.security.web.AuthenticationEntryPoint;
++import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
++
++@Configuration
++@EnableWebSecurity
++public class SecurityConfig extends WebSecurityConfigurerAdapter {
++  private final TokenStore tokens;
++  public SecurityConfig(TokenStore tokens) { this.tokens = tokens; }
++
++  @Bean public PasswordEncoder passwordEncoder() { return new BCryptPasswordEncoder(); }
++
++  @Bean
++  public AuthenticationEntryPoint unauthorizedEntryPoint() {
++    return (request, response, exception) -> response.sendError(401);
++  }
++
++  @Override protected void configure(HttpSecurity http) throws Exception {
++    http.csrf().disable()
++        .sessionManagement().sessionCreationPolicy(SessionCreationPolicy.STATELESS)
++        .and().exceptionHandling().authenticationEntryPoint(unauthorizedEntryPoint())
++        .and().authorizeRequests()
++          .antMatchers("/api/auth/login").permitAll()
++          .antMatchers("/api/auth/admin-test").hasRole("ADMIN")
++          .antMatchers("/api/auth/me").authenticated()
++          .anyRequest().authenticated()
++        .and().addFilterBefore(new BearerTokenFilter(tokens), UsernamePasswordAuthenticationFilter.class);
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/device/Device.java backend/src/main/java/com/campus/farm/device/Device.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/device/Device.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/device/Device.java	2026-09-14 15:18:42
+@@ -0,0 +1,43 @@
++package com.campus.farm.device;
++
++import javax.persistence.Column;
++import javax.persistence.Entity;
++import javax.persistence.GeneratedValue;
++import javax.persistence.GenerationType;
++import javax.persistence.Id;
++import javax.persistence.Table;
++
++@Entity
++@Table(name = "devices")
++public class Device {
++  @Id
++  @GeneratedValue(strategy = GenerationType.IDENTITY)
++  private Long id;
++
++  @Column(nullable = false, unique = true, length = 64)
++  private String deviceCode;
++
++  @Column(nullable = false, length = 128)
++  private String name;
++
++  @Column(nullable = false, length = 32)
++  private String type;
++
++  @Column(nullable = false, length = 32)
++  private String status;
++
++  protected Device() { }
++
++  public Device(String deviceCode, String name, String type, String status) {
++    this.deviceCode = deviceCode;
++    this.name = name;
++    this.type = type;
++    this.status = status;
++  }
++
++  public Long getId() { return id; }
++  public String getDeviceCode() { return deviceCode; }
++  public String getName() { return name; }
++  public String getType() { return type; }
++  public String getStatus() { return status; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/device/DeviceRepository.java backend/src/main/java/com/campus/farm/device/DeviceRepository.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/device/DeviceRepository.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/device/DeviceRepository.java	2026-09-14 15:18:42
+@@ -0,0 +1,10 @@
++package com.campus.farm.device;
++
++import java.util.List;
++import java.util.Optional;
++import org.springframework.data.jpa.repository.JpaRepository;
++
++public interface DeviceRepository extends JpaRepository<Device, Long> {
++  Optional<Device> findByDeviceCode(String deviceCode);
++  List<Device> findByType(String type);
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/DataFreshness.java backend/src/main/java/com/campus/farm/integration/DataFreshness.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/DataFreshness.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/integration/DataFreshness.java	2026-09-14 16:12:03
+@@ -0,0 +1,5 @@
++package com.campus.farm.integration;
++
++public enum DataFreshness {
++  CURRENT, DELAYED, UNKNOWN
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/ExternalSnapshot.java backend/src/main/java/com/campus/farm/integration/ExternalSnapshot.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/ExternalSnapshot.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/integration/ExternalSnapshot.java	2026-09-14 16:12:03
+@@ -0,0 +1,27 @@
++package com.campus.farm.integration;
++
++import java.math.BigDecimal;
++import java.time.Instant;
++
++public class ExternalSnapshot {
++  private final String source;
++  private final String deviceCode;
++  private final String metric;
++  private final BigDecimal value;
++  private final Instant sourceTimestamp;
++
++  public ExternalSnapshot(String source, String deviceCode, String metric, BigDecimal value,
++      Instant sourceTimestamp) {
++    this.source = source;
++    this.deviceCode = deviceCode;
++    this.metric = metric;
++    this.value = value;
++    this.sourceTimestamp = sourceTimestamp;
++  }
++
++  public String getSource() { return source; }
++  public String getDeviceCode() { return deviceCode; }
++  public String getMetric() { return metric; }
++  public BigDecimal getValue() { return value; }
++  public Instant getSourceTimestamp() { return sourceTimestamp; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/FusionSolarDemoAdapter.java backend/src/main/java/com/campus/farm/integration/FusionSolarDemoAdapter.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/FusionSolarDemoAdapter.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/integration/FusionSolarDemoAdapter.java	2026-09-14 16:31:58
+@@ -0,0 +1,17 @@
++package com.campus.farm.integration;
++
++import java.math.BigDecimal;
++import java.time.Instant;
++import java.util.Collections;
++import org.springframework.stereotype.Component;
++
++/** Demo-only adapter. It uses no credentials and makes no external request. */
++@Component
++public class FusionSolarDemoAdapter implements NamedSnapshotPort {
++  public String integrationName() { return "fusion-solar"; }
++
++  public java.util.List<ExternalSnapshot> readSnapshots() {
++    return Collections.singletonList(new ExternalSnapshot("FUSIONSOLAR", "PV-001", "powerKw",
++        new BigDecimal("8.40"), Instant.now()));
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/HydrawiseDemoAdapter.java backend/src/main/java/com/campus/farm/integration/HydrawiseDemoAdapter.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/HydrawiseDemoAdapter.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/integration/HydrawiseDemoAdapter.java	2026-09-14 16:31:58
+@@ -0,0 +1,17 @@
++package com.campus.farm.integration;
++
++import java.math.BigDecimal;
++import java.time.Instant;
++import java.util.Collections;
++import org.springframework.stereotype.Component;
++
++/** Demo-only adapter. It uses no credentials and makes no external request. */
++@Component
++public class HydrawiseDemoAdapter implements NamedSnapshotPort {
++  public String integrationName() { return "hydrawise"; }
++
++  public java.util.List<ExternalSnapshot> readSnapshots() {
++    return Collections.singletonList(new ExternalSnapshot("HYDRAWISE", "IRR-001", "watering",
++        BigDecimal.ZERO, Instant.now()));
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/IntegrationPortRegistry.java backend/src/main/java/com/campus/farm/integration/IntegrationPortRegistry.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/IntegrationPortRegistry.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/integration/IntegrationPortRegistry.java	2026-09-14 16:31:58
+@@ -0,0 +1,19 @@
++package com.campus.farm.integration;
++
++import java.util.LinkedHashMap;
++import java.util.List;
++import java.util.Map;
++import org.springframework.stereotype.Component;
++
++@Component
++public class IntegrationPortRegistry {
++  private final Map<String, SnapshotPort> ports = new LinkedHashMap<>();
++
++  public IntegrationPortRegistry(List<NamedSnapshotPort> namedPorts) {
++    for (NamedSnapshotPort port : namedPorts) ports.put(port.integrationName(), port);
++  }
++
++  public Map<String, SnapshotPort> ports() {
++    return new LinkedHashMap<>(ports);
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/IntegrationScheduler.java backend/src/main/java/com/campus/farm/integration/IntegrationScheduler.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/IntegrationScheduler.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/integration/IntegrationScheduler.java	2026-09-14 16:31:58
+@@ -0,0 +1,26 @@
++package com.campus.farm.integration;
++
++import java.util.Map;
++import org.springframework.beans.factory.annotation.Value;
++import org.springframework.scheduling.annotation.Scheduled;
++import org.springframework.stereotype.Component;
++
++@Component
++public class IntegrationScheduler {
++  private final IntegrationSyncService syncService;
++  private final IntegrationPortRegistry portRegistry;
++  private final boolean enabled;
++
++  public IntegrationScheduler(IntegrationSyncService syncService, IntegrationPortRegistry portRegistry,
++      @Value("${farm.integration.sync-enabled:true}") boolean enabled) {
++    this.syncService = syncService; this.portRegistry = portRegistry; this.enabled = enabled;
++  }
++
++  @Scheduled(fixedDelayString = "${farm.integration.sync-delay-ms:300000}")
++  public void synchronizeConfiguredDemoSources() {
++    if (!enabled) return;
++    for (Map.Entry<String, SnapshotPort> entry : portRegistry.ports().entrySet()) {
++      syncService.sync(entry.getKey(), entry.getValue());
++    }
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/IntegrationSyncService.java backend/src/main/java/com/campus/farm/integration/IntegrationSyncService.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/IntegrationSyncService.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/integration/IntegrationSyncService.java	2026-09-14 16:40:11
+@@ -0,0 +1,51 @@
++package com.campus.farm.integration;
++
++import java.time.Instant;
++import java.util.List;
++import org.springframework.dao.DataIntegrityViolationException;
++import org.springframework.stereotype.Service;
++import org.springframework.transaction.annotation.Transactional;
++
++@Service
++public class IntegrationSyncService {
++  private static final int MAX_ATTEMPTS = 3;
++  private final LatestSnapshotWriter snapshotWriter;
++  private final SyncExecutionRepository executions;
++
++  public IntegrationSyncService(LatestSnapshotWriter snapshotWriter, SyncExecutionRepository executions) {
++    this.snapshotWriter = snapshotWriter;
++    this.executions = executions;
++  }
++
++  @Transactional
++  public void sync(String integration, SnapshotPort port) {
++    Instant startedAt = Instant.now();
++    int attempts = 0;
++    try {
++      List<ExternalSnapshot> retrieved = null;
++      while (attempts < MAX_ATTEMPTS) {
++        attempts++;
++        try {
++          retrieved = port.readSnapshots();
++          break;
++        } catch (RuntimeException exception) {
++          if (attempts == MAX_ATTEMPTS) throw exception;
++        }
++      }
++      Instant receivedAt = Instant.now();
++      for (ExternalSnapshot snapshot : retrieved) saveLatest(snapshot, receivedAt);
++      executions.save(new SyncExecution(integration, SyncStatus.SUCCESS, attempts, startedAt, Instant.now(), null));
++    } catch (RuntimeException exception) {
++      executions.save(new SyncExecution(integration, SyncStatus.FAILED, attempts, startedAt, Instant.now(), exception.getMessage()));
++    }
++  }
++
++  private void saveLatest(ExternalSnapshot external, Instant receivedAt) {
++    try {
++      snapshotWriter.writeIfNewest(external, receivedAt);
++    } catch (DataIntegrityViolationException alreadyInserted) {
++      // The competing insert rolled back in its own transaction. Re-evaluate against the committed row.
++      snapshotWriter.writeIfNewest(external, receivedAt);
++    }
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/LatestSnapshot.java backend/src/main/java/com/campus/farm/integration/LatestSnapshot.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/LatestSnapshot.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/integration/LatestSnapshot.java	2026-09-14 16:31:58
+@@ -0,0 +1,39 @@
++package com.campus.farm.integration;
++
++import java.math.BigDecimal;
++import java.time.Instant;
++import javax.persistence.Column;
++import javax.persistence.Entity;
++import javax.persistence.GeneratedValue;
++import javax.persistence.GenerationType;
++import javax.persistence.Id;
++import javax.persistence.Table;
++import javax.persistence.UniqueConstraint;
++
++@Entity
++@Table(name = "latest_snapshots", uniqueConstraints = @UniqueConstraint(columnNames = {"source", "device_code", "metric"}))
++public class LatestSnapshot {
++  @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
++  @Column(nullable = false, length = 32) private String source;
++  @Column(name = "device_code", nullable = false, length = 64) private String deviceCode;
++  @Column(nullable = false, length = 64) private String metric;
++  @Column(name = "reading_value", nullable = false, precision = 19, scale = 4) private BigDecimal value;
++  @Column(name = "source_timestamp", nullable = false) private Instant sourceTimestamp;
++  @Column(name = "received_timestamp", nullable = false) private Instant receivedTimestamp;
++
++  protected LatestSnapshot() { }
++  public LatestSnapshot(ExternalSnapshot snapshot, Instant receivedTimestamp) {
++    source = snapshot.getSource(); deviceCode = snapshot.getDeviceCode(); metric = snapshot.getMetric();
++    value = snapshot.getValue(); sourceTimestamp = snapshot.getSourceTimestamp(); this.receivedTimestamp = receivedTimestamp;
++  }
++  public void updateFrom(ExternalSnapshot snapshot, Instant receivedTimestamp) {
++    value = snapshot.getValue(); sourceTimestamp = snapshot.getSourceTimestamp(); this.receivedTimestamp = receivedTimestamp;
++  }
++  public Long getId() { return id; }
++  public String getSource() { return source; }
++  public String getDeviceCode() { return deviceCode; }
++  public String getMetric() { return metric; }
++  public BigDecimal getValue() { return value; }
++  public Instant getSourceTimestamp() { return sourceTimestamp; }
++  public Instant getReceivedTimestamp() { return receivedTimestamp; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/LatestSnapshotRepository.java backend/src/main/java/com/campus/farm/integration/LatestSnapshotRepository.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/LatestSnapshotRepository.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/integration/LatestSnapshotRepository.java	2026-09-14 16:38:38
+@@ -0,0 +1,24 @@
++package com.campus.farm.integration;
++
++import java.math.BigDecimal;
++import java.time.Instant;
++import java.util.Optional;
++import org.springframework.data.jpa.repository.Modifying;
++import org.springframework.data.jpa.repository.JpaRepository;
++import org.springframework.data.jpa.repository.Query;
++import org.springframework.data.repository.query.Param;
++import org.springframework.transaction.annotation.Transactional;
++
++public interface LatestSnapshotRepository extends JpaRepository<LatestSnapshot, Long> {
++  Optional<LatestSnapshot> findBySourceAndDeviceCodeAndMetric(String source, String deviceCode, String metric);
++
++  @Modifying
++  @Transactional
++  @Query("update LatestSnapshot s set s.value = :value, s.sourceTimestamp = :sourceTimestamp, "
++      + "s.receivedTimestamp = :receivedTimestamp where s.source = :source and s.deviceCode = :deviceCode "
++      + "and s.metric = :metric and s.sourceTimestamp <= :sourceTimestamp")
++  int updateWhenSourceTimestampNotAfter(@Param("source") String source,
++      @Param("deviceCode") String deviceCode, @Param("metric") String metric,
++      @Param("value") BigDecimal value, @Param("sourceTimestamp") Instant sourceTimestamp,
++      @Param("receivedTimestamp") Instant receivedTimestamp);
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/LatestSnapshotWriter.java backend/src/main/java/com/campus/farm/integration/LatestSnapshotWriter.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/LatestSnapshotWriter.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/integration/LatestSnapshotWriter.java	2026-09-14 16:40:11
+@@ -0,0 +1,25 @@
++package com.campus.farm.integration;
++
++import java.time.Instant;
++import org.springframework.stereotype.Service;
++import org.springframework.transaction.annotation.Propagation;
++import org.springframework.transaction.annotation.Transactional;
++
++@Service
++public class LatestSnapshotWriter {
++  private final LatestSnapshotRepository snapshots;
++
++  public LatestSnapshotWriter(LatestSnapshotRepository snapshots) {
++    this.snapshots = snapshots;
++  }
++
++  @Transactional(propagation = Propagation.REQUIRES_NEW)
++  public void writeIfNewest(ExternalSnapshot external, Instant receivedAt) {
++    int updated = snapshots.updateWhenSourceTimestampNotAfter(external.getSource(), external.getDeviceCode(),
++        external.getMetric(), external.getValue(), external.getSourceTimestamp(), receivedAt);
++    if (updated == 0 && !snapshots.findBySourceAndDeviceCodeAndMetric(
++        external.getSource(), external.getDeviceCode(), external.getMetric()).isPresent()) {
++      snapshots.saveAndFlush(new LatestSnapshot(external, receivedAt));
++    }
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/NamedSnapshotPort.java backend/src/main/java/com/campus/farm/integration/NamedSnapshotPort.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/NamedSnapshotPort.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/integration/NamedSnapshotPort.java	2026-09-14 16:31:58
+@@ -0,0 +1,6 @@
++package com.campus.farm.integration;
++
++/** A snapshot port registered under the stable local integration name. */
++public interface NamedSnapshotPort extends SnapshotPort {
++  String integrationName();
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/SnapshotFreshness.java backend/src/main/java/com/campus/farm/integration/SnapshotFreshness.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/SnapshotFreshness.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/integration/SnapshotFreshness.java	2026-09-14 16:12:03
+@@ -0,0 +1,21 @@
++package com.campus.farm.integration;
++
++import java.time.Clock;
++import java.time.Duration;
++import java.time.Instant;
++
++public class SnapshotFreshness {
++  private final Clock clock;
++  private final long maximumAgeSeconds;
++
++  public SnapshotFreshness(Clock clock, long maximumAgeSeconds) {
++    this.clock = clock;
++    this.maximumAgeSeconds = maximumAgeSeconds;
++  }
++
++  public DataFreshness forSourceTimestamp(Instant sourceTimestamp) {
++    if (sourceTimestamp == null) return DataFreshness.UNKNOWN;
++    return Duration.between(sourceTimestamp, clock.instant()).getSeconds() <= maximumAgeSeconds
++        ? DataFreshness.CURRENT : DataFreshness.DELAYED;
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/SnapshotPort.java backend/src/main/java/com/campus/farm/integration/SnapshotPort.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/SnapshotPort.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/integration/SnapshotPort.java	2026-09-14 16:12:03
+@@ -0,0 +1,8 @@
++package com.campus.farm.integration;
++
++import java.util.List;
++
++/** A vendor-neutral, read-only boundary for external telemetry retrieval. */
++public interface SnapshotPort {
++  List<ExternalSnapshot> readSnapshots();
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/SnapshotRetrievalException.java backend/src/main/java/com/campus/farm/integration/SnapshotRetrievalException.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/SnapshotRetrievalException.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/integration/SnapshotRetrievalException.java	2026-09-14 16:12:03
+@@ -0,0 +1,6 @@
++package com.campus.farm.integration;
++
++public class SnapshotRetrievalException extends RuntimeException {
++  public SnapshotRetrievalException(String message) { super(message); }
++  public SnapshotRetrievalException(String message, Throwable cause) { super(message, cause); }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/SyncExecution.java backend/src/main/java/com/campus/farm/integration/SyncExecution.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/SyncExecution.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/integration/SyncExecution.java	2026-09-14 16:12:03
+@@ -0,0 +1,37 @@
++package com.campus.farm.integration;
++
++import java.time.Instant;
++import javax.persistence.Column;
++import javax.persistence.Entity;
++import javax.persistence.EnumType;
++import javax.persistence.Enumerated;
++import javax.persistence.GeneratedValue;
++import javax.persistence.GenerationType;
++import javax.persistence.Id;
++import javax.persistence.Table;
++
++@Entity
++@Table(name = "sync_executions")
++public class SyncExecution {
++  @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
++  @Column(nullable = false, length = 64) private String integration;
++  @Enumerated(EnumType.STRING) @Column(nullable = false, length = 16) private SyncStatus status;
++  @Column(nullable = false) private int attempts;
++  @Column(nullable = false) private Instant startedAt;
++  @Column(nullable = false) private Instant completedAt;
++  @Column(length = 1000) private String errorMessage;
++
++  protected SyncExecution() { }
++  public SyncExecution(String integration, SyncStatus status, int attempts, Instant startedAt, Instant completedAt,
++      String errorMessage) {
++    this.integration = integration; this.status = status; this.attempts = attempts; this.startedAt = startedAt;
++    this.completedAt = completedAt; this.errorMessage = errorMessage;
++  }
++  public Long getId() { return id; }
++  public String getIntegration() { return integration; }
++  public SyncStatus getStatus() { return status; }
++  public int getAttempts() { return attempts; }
++  public Instant getStartedAt() { return startedAt; }
++  public Instant getCompletedAt() { return completedAt; }
++  public String getErrorMessage() { return errorMessage; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/SyncExecutionRepository.java backend/src/main/java/com/campus/farm/integration/SyncExecutionRepository.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/SyncExecutionRepository.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/integration/SyncExecutionRepository.java	2026-09-14 16:12:03
+@@ -0,0 +1,8 @@
++package com.campus.farm.integration;
++
++import java.util.Optional;
++import org.springframework.data.jpa.repository.JpaRepository;
++
++public interface SyncExecutionRepository extends JpaRepository<SyncExecution, Long> {
++  Optional<SyncExecution> findTopByIntegrationOrderByStartedAtDesc(String integration);
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/SyncStatus.java backend/src/main/java/com/campus/farm/integration/SyncStatus.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/integration/SyncStatus.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/integration/SyncStatus.java	2026-09-14 16:12:03
+@@ -0,0 +1,3 @@
++package com.campus.farm.integration;
++
++public enum SyncStatus { SUCCESS, FAILED }
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/HydrawiseDemoIrrigationCommandAdapter.java backend/src/main/java/com/campus/farm/irrigation/HydrawiseDemoIrrigationCommandAdapter.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/HydrawiseDemoIrrigationCommandAdapter.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/HydrawiseDemoIrrigationCommandAdapter.java	2026-09-14 17:21:54
+@@ -0,0 +1,35 @@
++package com.campus.farm.irrigation;
++
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Map;
++import java.util.concurrent.ConcurrentHashMap;
++import org.springframework.stereotype.Component;
++
++/** Demo-only in-memory controller. It makes no external request and holds no credentials. */
++@Component
++public class HydrawiseDemoIrrigationCommandAdapter implements IrrigationCommandPort {
++  private final Map<String, IrrigationZoneStatus> statuses = new ConcurrentHashMap<>();
++
++  public IrrigationZoneStatus readStatus(String zoneId) {
++    return statuses.getOrDefault(zoneId, IrrigationZoneStatus.IDLE);
++  }
++
++  public List<IrrigationZoneState> readAllStatuses() {
++    List<IrrigationZoneState> states = new ArrayList<>();
++    states.add(new IrrigationZoneState("zone-1", readStatus("zone-1")));
++    states.add(new IrrigationZoneState("zone-2", readStatus("zone-2")));
++    return states;
++  }
++
++  public IrrigationDispatchResult dispatch(IrrigationCommand command) {
++    if (command.getAction() == IrrigationAction.START) statuses.put(command.getZoneId(), IrrigationZoneStatus.RUNNING);
++    if (command.getAction() == IrrigationAction.STOP) statuses.put(command.getZoneId(), IrrigationZoneStatus.IDLE);
++    if (command.getAction() == IrrigationAction.PAUSE) {
++      if ("all".equals(command.getZoneId())) {
++        for (String zone : new ArrayList<>(statuses.keySet())) statuses.put(zone, IrrigationZoneStatus.PAUSED);
++      } else statuses.put(command.getZoneId(), IrrigationZoneStatus.PAUSED);
++    }
++    return IrrigationDispatchResult.accepted("demo controller accepted command");
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationAction.java backend/src/main/java/com/campus/farm/irrigation/IrrigationAction.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationAction.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/IrrigationAction.java	2026-09-14 17:08:58
+@@ -0,0 +1,16 @@
++package com.campus.farm.irrigation;
++
++import java.util.Locale;
++
++public enum IrrigationAction {
++  START, STOP, PAUSE;
++
++  public static IrrigationAction fromPath(String value) {
++    if (value == null) throw new IrrigationBadRequestException("action is required");
++    try {
++      return valueOf(value.toUpperCase(Locale.ROOT));
++    } catch (IllegalArgumentException invalid) {
++      throw new IrrigationBadRequestException("unsupported irrigation action");
++    }
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationBadRequestException.java backend/src/main/java/com/campus/farm/irrigation/IrrigationBadRequestException.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationBadRequestException.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/IrrigationBadRequestException.java	2026-09-14 17:08:58
+@@ -0,0 +1,5 @@
++package com.campus.farm.irrigation;
++
++public class IrrigationBadRequestException extends RuntimeException {
++  public IrrigationBadRequestException(String message) { super(message); }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationCommand.java backend/src/main/java/com/campus/farm/irrigation/IrrigationCommand.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationCommand.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/IrrigationCommand.java	2026-09-14 17:08:58
+@@ -0,0 +1,13 @@
++package com.campus.farm.irrigation;
++
++public class IrrigationCommand {
++  private final String zoneId;
++  private final IrrigationAction action;
++  private final Integer durationMinutes;
++  public IrrigationCommand(String zoneId, IrrigationAction action, Integer durationMinutes) {
++    this.zoneId = zoneId; this.action = action; this.durationMinutes = durationMinutes;
++  }
++  public String getZoneId() { return zoneId; }
++  public IrrigationAction getAction() { return action; }
++  public Integer getDurationMinutes() { return durationMinutes; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationCommandPort.java backend/src/main/java/com/campus/farm/irrigation/IrrigationCommandPort.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationCommandPort.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/IrrigationCommandPort.java	2026-09-14 17:08:58
+@@ -0,0 +1,10 @@
++package com.campus.farm.irrigation;
++
++import java.util.List;
++
++/** Vendor boundary for reading controller state and dispatching irrigation commands. */
++public interface IrrigationCommandPort {
++  IrrigationZoneStatus readStatus(String zoneId);
++  List<IrrigationZoneState> readAllStatuses();
++  IrrigationDispatchResult dispatch(IrrigationCommand command);
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationCommandResult.java backend/src/main/java/com/campus/farm/irrigation/IrrigationCommandResult.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationCommandResult.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/IrrigationCommandResult.java	2026-09-14 17:21:54
+@@ -0,0 +1,13 @@
++package com.campus.farm.irrigation;
++
++public class IrrigationCommandResult {
++  private final String commandResult;
++  private final String confirmation;
++  private final String detail;
++  public IrrigationCommandResult(String commandResult, String confirmation, String detail) {
++    this.commandResult = commandResult; this.confirmation = confirmation; this.detail = detail;
++  }
++  public String getCommandResult() { return commandResult; }
++  public String getConfirmation() { return confirmation; }
++  public String getDetail() { return detail; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationConfiguration.java backend/src/main/java/com/campus/farm/irrigation/IrrigationConfiguration.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationConfiguration.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/IrrigationConfiguration.java	2026-09-14 17:21:54
+@@ -0,0 +1,12 @@
++package com.campus.farm.irrigation;
++
++import java.time.Clock;
++import org.springframework.context.annotation.Bean;
++import org.springframework.context.annotation.Configuration;
++
++@Configuration
++public class IrrigationConfiguration {
++  @Bean public IrrigationOperationPolicy irrigationOperationPolicy() {
++    return new IrrigationOperationPolicy(Clock.systemDefaultZone());
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationConflictException.java backend/src/main/java/com/campus/farm/irrigation/IrrigationConflictException.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationConflictException.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/IrrigationConflictException.java	2026-09-14 17:08:58
+@@ -0,0 +1,5 @@
++package com.campus.farm.irrigation;
++
++public class IrrigationConflictException extends RuntimeException {
++  public IrrigationConflictException(String message) { super(message); }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationController.java backend/src/main/java/com/campus/farm/irrigation/IrrigationController.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationController.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/IrrigationController.java	2026-09-14 17:25:20
+@@ -0,0 +1,59 @@
++package com.campus.farm.irrigation;
++
++import com.campus.farm.auth.User;
++import com.campus.farm.irrigation.dto.IrrigationCommandRequest;
++import com.campus.farm.irrigation.dto.IrrigationCommandResponse;
++import com.campus.farm.irrigation.dto.IrrigationZoneResponse;
++import java.util.List;
++import java.util.stream.Collectors;
++import org.springframework.http.ResponseEntity;
++import org.springframework.security.core.Authentication;
++import org.springframework.web.bind.annotation.ExceptionHandler;
++import org.springframework.web.bind.annotation.GetMapping;
++import org.springframework.web.bind.annotation.PathVariable;
++import org.springframework.web.bind.annotation.PostMapping;
++import org.springframework.web.bind.annotation.RequestBody;
++import org.springframework.web.bind.annotation.RequestMapping;
++import org.springframework.web.bind.annotation.RestController;
++
++@RestController
++@RequestMapping("/api")
++public class IrrigationController {
++  private final IrrigationService irrigation;
++  private final IrrigationZoneRepository zones;
++  private final IrrigationCommandPort port;
++
++  public IrrigationController(IrrigationService irrigation, IrrigationZoneRepository zones,
++      IrrigationCommandPort port) {
++    this.irrigation = irrigation; this.zones = zones; this.port = port;
++  }
++
++  @GetMapping("/zones")
++  public List<IrrigationZoneResponse> zones() {
++    return zones.findAll().stream().map(zone -> new IrrigationZoneResponse(zone,
++        port.readStatus(zone.getZoneId()))).collect(Collectors.toList());
++  }
++
++  @PostMapping("/irrigation/{zoneId}/{action}")
++  public IrrigationCommandResponse command(@PathVariable String zoneId, @PathVariable String action,
++      @RequestBody IrrigationCommandRequest request, Authentication authentication) {
++    User user = (User) authentication.getDetails();
++    return new IrrigationCommandResponse(irrigation.command(user.getUsername(), user.getRole(), zoneId,
++        action, request.getDurationMinutes(), request.getReason()));
++  }
++
++  @ExceptionHandler(IrrigationBadRequestException.class)
++  public ResponseEntity<Void> badRequest(IrrigationBadRequestException exception) {
++    return ResponseEntity.badRequest().build();
++  }
++
++  @ExceptionHandler(IrrigationForbiddenException.class)
++  public ResponseEntity<Void> forbidden(IrrigationForbiddenException exception) {
++    return ResponseEntity.status(403).build();
++  }
++
++  @ExceptionHandler(IrrigationConflictException.class)
++  public ResponseEntity<Void> conflict(IrrigationConflictException exception) {
++    return ResponseEntity.status(409).build();
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationDispatchResult.java backend/src/main/java/com/campus/farm/irrigation/IrrigationDispatchResult.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationDispatchResult.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/IrrigationDispatchResult.java	2026-09-14 17:08:58
+@@ -0,0 +1,11 @@
++package com.campus.farm.irrigation;
++
++public class IrrigationDispatchResult {
++  private final boolean accepted;
++  private final String detail;
++  private IrrigationDispatchResult(boolean accepted, String detail) { this.accepted = accepted; this.detail = detail; }
++  public static IrrigationDispatchResult accepted(String detail) { return new IrrigationDispatchResult(true, detail); }
++  public static IrrigationDispatchResult rejected(String detail) { return new IrrigationDispatchResult(false, detail); }
++  public boolean isAccepted() { return accepted; }
++  public String getDetail() { return detail; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationForbiddenException.java backend/src/main/java/com/campus/farm/irrigation/IrrigationForbiddenException.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationForbiddenException.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/IrrigationForbiddenException.java	2026-09-14 17:08:58
+@@ -0,0 +1,5 @@
++package com.campus.farm.irrigation;
++
++public class IrrigationForbiddenException extends RuntimeException {
++  public IrrigationForbiddenException(String message) { super(message); }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationOperationPolicy.java backend/src/main/java/com/campus/farm/irrigation/IrrigationOperationPolicy.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationOperationPolicy.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/IrrigationOperationPolicy.java	2026-09-14 17:08:58
+@@ -0,0 +1,22 @@
++package com.campus.farm.irrigation;
++
++import java.time.Clock;
++import java.time.LocalTime;
++
++public class IrrigationOperationPolicy {
++  private final Clock clock;
++  public IrrigationOperationPolicy(Clock clock) { this.clock = clock; }
++
++  public void validateStart(IrrigationZone zone, Integer durationMinutes) {
++    if (durationMinutes == null || durationMinutes <= 0) {
++      throw new IrrigationBadRequestException("start durationMinutes must be positive");
++    }
++    if (durationMinutes > zone.getMaximumDurationMinutes()) {
++      throw new IrrigationConflictException("requested duration exceeds zone maximum");
++    }
++    LocalTime now = LocalTime.now(clock);
++    if (now.isBefore(zone.getOperationWindowStart()) || !now.isBefore(zone.getOperationWindowEnd())) {
++      throw new IrrigationConflictException("operation is outside the configured window");
++    }
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationRun.java backend/src/main/java/com/campus/farm/irrigation/IrrigationRun.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationRun.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/IrrigationRun.java	2026-09-14 17:08:58
+@@ -0,0 +1,40 @@
++package com.campus.farm.irrigation;
++
++import java.time.Instant;
++import javax.persistence.Column;
++import javax.persistence.Entity;
++import javax.persistence.GeneratedValue;
++import javax.persistence.GenerationType;
++import javax.persistence.Id;
++import javax.persistence.Table;
++
++@Entity
++@Table(name = "irrigation_runs")
++public class IrrigationRun {
++  @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
++  @Column(nullable = false, length = 64) private String actor;
++  @Column(nullable = false, length = 64) private String target;
++  @Column(nullable = false, length = 16) private String action;
++  @Column(nullable = false, length = 512) private String parameterSummary;
++  @Column(nullable = false, length = 32) private String commandResult;
++  @Column(nullable = false, length = 32) private String confirmation;
++  @Column(nullable = false, length = 512) private String outcomeDetail;
++  @Column(nullable = false) private Instant recordedAt;
++
++  protected IrrigationRun() { }
++  public IrrigationRun(String actor, String target, String action, String parameterSummary,
++      String commandResult, String confirmation, String outcomeDetail) {
++    this.actor = actor; this.target = target; this.action = action;
++    this.parameterSummary = parameterSummary; this.commandResult = commandResult;
++    this.confirmation = confirmation; this.outcomeDetail = outcomeDetail; this.recordedAt = Instant.now();
++  }
++  public Long getId() { return id; }
++  public String getActor() { return actor; }
++  public String getTarget() { return target; }
++  public String getAction() { return action; }
++  public String getParameterSummary() { return parameterSummary; }
++  public String getCommandResult() { return commandResult; }
++  public String getConfirmation() { return confirmation; }
++  public String getOutcomeDetail() { return outcomeDetail; }
++  public Instant getRecordedAt() { return recordedAt; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationRunRepository.java backend/src/main/java/com/campus/farm/irrigation/IrrigationRunRepository.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationRunRepository.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/IrrigationRunRepository.java	2026-09-14 17:08:58
+@@ -0,0 +1,5 @@
++package com.campus.farm.irrigation;
++
++import org.springframework.data.jpa.repository.JpaRepository;
++
++public interface IrrigationRunRepository extends JpaRepository<IrrigationRun, Long> { }
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationService.java backend/src/main/java/com/campus/farm/irrigation/IrrigationService.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationService.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/IrrigationService.java	2026-09-14 20:14:45
+@@ -0,0 +1,134 @@
++package com.campus.farm.irrigation;
++
++import com.campus.farm.audit.AuditService;
++import java.util.List;
++import org.springframework.stereotype.Service;
++
++@Service
++public class IrrigationService {
++  private final IrrigationZoneRepository zones;
++  private final IrrigationRunRepository runs;
++  private final AuditService audits;
++  private final IrrigationCommandPort port;
++  private final IrrigationOperationPolicy policy;
++
++  public IrrigationService(IrrigationZoneRepository zones, IrrigationRunRepository runs, AuditService audits,
++      IrrigationCommandPort port, IrrigationOperationPolicy policy) {
++    this.zones = zones; this.runs = runs; this.audits = audits; this.port = port; this.policy = policy;
++  }
++
++  public IrrigationCommandResult command(String actor, String role, String zoneId, String actionValue,
++      Integer durationMinutes, String reason) {
++    IrrigationAction action = null;
++    String target = auditTarget(zoneId);
++    String parameters = safeParameterSummary(durationMinutes, reason);
++    String requestedAction = auditAction(actionValue);
++    try {
++      action = IrrigationAction.fromPath(actionValue);
++      target = normalizeTarget(zoneId, action);
++      validateReason(reason);
++      requireControlRole(role);
++      if (action != IrrigationAction.START && durationMinutes != null) {
++        throw new IrrigationBadRequestException("durationMinutes is valid only for start");
++      }
++      if (action == IrrigationAction.PAUSE && "all".equals(target)) {
++        return pauseAll(actor, action, parameters);
++      }
++      IrrigationZone zone = zones.findByZoneId(target)
++          .orElseThrow(() -> new IrrigationBadRequestException("unknown irrigation zone"));
++      if (action == IrrigationAction.START) {
++        policy.validateStart(zone, durationMinutes);
++        rejectRunningConflict(target);
++      }
++      IrrigationZoneStatus before = port.readStatus(target);
++      IrrigationDispatchResult dispatched = port.dispatch(new IrrigationCommand(target, action, durationMinutes));
++      if (!dispatched.isAccepted()) return record(actor, target, action.name(), parameters, "REJECTED", "NOT_CONFIRMED",
++          dispatched.getDetail());
++      IrrigationZoneStatus after = port.readStatus(target);
++      String confirmation = confirms(action, after) ? "CONFIRMED" : "PENDING";
++      return record(actor, target, action.name(), parameters, "ACCEPTED", confirmation,
++          "before=" + before + "; after=" + after + "; " + dispatched.getDetail());
++    } catch (IrrigationBadRequestException | IrrigationConflictException | IrrigationForbiddenException expected) {
++      record(actor, target, action == null ? requestedAction : action.name(), parameters,
++          "REJECTED", "NOT_SENT", expected.getMessage());
++      throw expected;
++    } catch (RuntimeException failure) {
++      record(actor, target, action == null ? requestedAction : action.name(), parameters,
++          "FAILED", "NOT_CONFIRMED", "command processing failed");
++      throw failure;
++    }
++  }
++
++  private IrrigationCommandResult pauseAll(String actor, IrrigationAction action, String parameters) {
++    List<IrrigationZoneState> before = port.readAllStatuses();
++    IrrigationDispatchResult dispatched = port.dispatch(new IrrigationCommand("all", action, null));
++    if (!dispatched.isAccepted()) return record(actor, "all", action.name(), parameters, "REJECTED", "NOT_CONFIRMED",
++        dispatched.getDetail());
++    List<IrrigationZoneState> after = port.readAllStatuses();
++    boolean confirmed = after.stream().noneMatch(state -> state.getStatus() == IrrigationZoneStatus.RUNNING);
++    return record(actor, "all", action.name(), parameters, "ACCEPTED", confirmed ? "CONFIRMED" : "PENDING",
++        "beforeZones=" + before.size() + "; afterZones=" + after.size() + "; " + dispatched.getDetail());
++  }
++
++  private void rejectRunningConflict(String target) {
++    for (IrrigationZoneState state : port.readAllStatuses()) {
++      if (state.getStatus() == IrrigationZoneStatus.RUNNING && !target.equals(state.getZoneId())) {
++        throw new IrrigationConflictException("another irrigation zone is already running");
++      }
++      if (state.getStatus() == IrrigationZoneStatus.RUNNING && target.equals(state.getZoneId())) {
++        throw new IrrigationConflictException("irrigation zone is already running");
++      }
++    }
++  }
++
++  private void requireControlRole(String role) {
++    if (!"ADMIN".equals(role) && !"OPERATOR".equals(role)) {
++      throw new IrrigationForbiddenException("irrigation control requires ADMIN or OPERATOR role");
++    }
++  }
++
++  private String normalizeTarget(String zoneId, IrrigationAction action) {
++    if (zoneId == null || zoneId.trim().isEmpty()) throw new IrrigationBadRequestException("zoneId is required");
++    String target = zoneId.trim();
++    if ("all".equals(target) && action != IrrigationAction.PAUSE) {
++      throw new IrrigationBadRequestException("all is valid only for pause");
++    }
++    return target;
++  }
++
++  private boolean confirms(IrrigationAction action, IrrigationZoneStatus status) {
++    return action == IrrigationAction.START ? status == IrrigationZoneStatus.RUNNING
++        : status != IrrigationZoneStatus.RUNNING;
++  }
++
++  private void validateReason(String reason) {
++    String cleanReason = reason == null ? "" : reason.trim();
++    if (cleanReason.length() > 200) throw new IrrigationBadRequestException("reason is too long");
++  }
++
++  private String safeParameterSummary(Integer durationMinutes, String reason) {
++    String cleanReason = reason == null ? "" : reason.trim();
++    if (cleanReason.length() > 200) cleanReason = cleanReason.substring(0, 200) + " [truncated]";
++    return "durationMinutes=" + (durationMinutes == null ? "none" : durationMinutes)
++        + "; reason=" + cleanReason;
++  }
++
++  private String auditAction(String actionValue) {
++    if (actionValue == null || actionValue.trim().isEmpty()) return "UNKNOWN";
++    String normalized = actionValue.trim().toUpperCase(java.util.Locale.ROOT);
++    return normalized.length() > 16 ? normalized.substring(0, 16) : normalized;
++  }
++
++  private String auditTarget(String zoneId) {
++    if (zoneId == null || zoneId.trim().isEmpty()) return "UNKNOWN";
++    String normalized = zoneId.trim();
++    return normalized.length() > 64 ? normalized.substring(0, 64) : normalized;
++  }
++
++  private IrrigationCommandResult record(String actor, String target, String action, String parameters,
++      String commandResult, String confirmation, String detail) {
++    runs.save(new IrrigationRun(actor, target, action, parameters, commandResult, confirmation, detail));
++    audits.record(actor, target, action, parameters, commandResult, confirmation, detail);
++    return new IrrigationCommandResult(commandResult, confirmation, detail);
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationZone.java backend/src/main/java/com/campus/farm/irrigation/IrrigationZone.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationZone.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/IrrigationZone.java	2026-09-14 17:08:58
+@@ -0,0 +1,36 @@
++package com.campus.farm.irrigation;
++
++import java.time.LocalTime;
++import javax.persistence.Column;
++import javax.persistence.Entity;
++import javax.persistence.GeneratedValue;
++import javax.persistence.GenerationType;
++import javax.persistence.Id;
++import javax.persistence.Table;
++
++@Entity
++@Table(name = "irrigation_zones")
++public class IrrigationZone {
++  @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
++  @Column(nullable = false, unique = true, length = 64) private String zoneId;
++  @Column(nullable = false, length = 128) private String name;
++  @Column(nullable = false, length = 128) private String plantingArea;
++  @Column(nullable = false) private int maximumDurationMinutes;
++  @Column(nullable = false) private LocalTime operationWindowStart;
++  @Column(nullable = false) private LocalTime operationWindowEnd;
++
++  protected IrrigationZone() { }
++  public IrrigationZone(String zoneId, String name, String plantingArea, int maximumDurationMinutes,
++      LocalTime operationWindowStart, LocalTime operationWindowEnd) {
++    this.zoneId = zoneId; this.name = name; this.plantingArea = plantingArea;
++    this.maximumDurationMinutes = maximumDurationMinutes;
++    this.operationWindowStart = operationWindowStart; this.operationWindowEnd = operationWindowEnd;
++  }
++  public Long getId() { return id; }
++  public String getZoneId() { return zoneId; }
++  public String getName() { return name; }
++  public String getPlantingArea() { return plantingArea; }
++  public int getMaximumDurationMinutes() { return maximumDurationMinutes; }
++  public LocalTime getOperationWindowStart() { return operationWindowStart; }
++  public LocalTime getOperationWindowEnd() { return operationWindowEnd; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationZoneRepository.java backend/src/main/java/com/campus/farm/irrigation/IrrigationZoneRepository.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationZoneRepository.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/IrrigationZoneRepository.java	2026-09-14 17:08:58
+@@ -0,0 +1,8 @@
++package com.campus.farm.irrigation;
++
++import java.util.Optional;
++import org.springframework.data.jpa.repository.JpaRepository;
++
++public interface IrrigationZoneRepository extends JpaRepository<IrrigationZone, Long> {
++  Optional<IrrigationZone> findByZoneId(String zoneId);
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationZoneState.java backend/src/main/java/com/campus/farm/irrigation/IrrigationZoneState.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationZoneState.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/IrrigationZoneState.java	2026-09-14 17:08:58
+@@ -0,0 +1,11 @@
++package com.campus.farm.irrigation;
++
++public class IrrigationZoneState {
++  private final String zoneId;
++  private final IrrigationZoneStatus status;
++  public IrrigationZoneState(String zoneId, IrrigationZoneStatus status) {
++    this.zoneId = zoneId; this.status = status;
++  }
++  public String getZoneId() { return zoneId; }
++  public IrrigationZoneStatus getStatus() { return status; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationZoneStatus.java backend/src/main/java/com/campus/farm/irrigation/IrrigationZoneStatus.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/IrrigationZoneStatus.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/IrrigationZoneStatus.java	2026-09-14 17:08:58
+@@ -0,0 +1,3 @@
++package com.campus.farm.irrigation;
++
++public enum IrrigationZoneStatus { IDLE, RUNNING, PAUSED, UNKNOWN }
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/dto/IrrigationCommandRequest.java backend/src/main/java/com/campus/farm/irrigation/dto/IrrigationCommandRequest.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/dto/IrrigationCommandRequest.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/dto/IrrigationCommandRequest.java	2026-09-14 17:22:18
+@@ -0,0 +1,10 @@
++package com.campus.farm.irrigation.dto;
++
++public class IrrigationCommandRequest {
++  private Integer durationMinutes;
++  private String reason;
++  public Integer getDurationMinutes() { return durationMinutes; }
++  public void setDurationMinutes(Integer durationMinutes) { this.durationMinutes = durationMinutes; }
++  public String getReason() { return reason; }
++  public void setReason(String reason) { this.reason = reason; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/dto/IrrigationCommandResponse.java backend/src/main/java/com/campus/farm/irrigation/dto/IrrigationCommandResponse.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/dto/IrrigationCommandResponse.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/dto/IrrigationCommandResponse.java	2026-09-14 17:22:18
+@@ -0,0 +1,15 @@
++package com.campus.farm.irrigation.dto;
++
++import com.campus.farm.irrigation.IrrigationCommandResult;
++
++public class IrrigationCommandResponse {
++  private final String commandResult;
++  private final String confirmation;
++  private final String detail;
++  public IrrigationCommandResponse(IrrigationCommandResult result) {
++    commandResult = result.getCommandResult(); confirmation = result.getConfirmation(); detail = result.getDetail();
++  }
++  public String getCommandResult() { return commandResult; }
++  public String getConfirmation() { return confirmation; }
++  public String getDetail() { return detail; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/dto/IrrigationZoneResponse.java backend/src/main/java/com/campus/farm/irrigation/dto/IrrigationZoneResponse.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/java/com/campus/farm/irrigation/dto/IrrigationZoneResponse.java	1970-01-01 08:00:00
++++ backend/src/main/java/com/campus/farm/irrigation/dto/IrrigationZoneResponse.java	2026-09-14 17:22:18
+@@ -0,0 +1,28 @@
++package com.campus.farm.irrigation.dto;
++
++import com.campus.farm.irrigation.IrrigationZone;
++import com.campus.farm.irrigation.IrrigationZoneStatus;
++import java.time.LocalTime;
++
++public class IrrigationZoneResponse {
++  private final String id;
++  private final String name;
++  private final String plantingArea;
++  private final int maximumDurationMinutes;
++  private final LocalTime operationWindowStart;
++  private final LocalTime operationWindowEnd;
++  private final IrrigationZoneStatus status;
++  public IrrigationZoneResponse(IrrigationZone zone, IrrigationZoneStatus status) {
++    id = zone.getZoneId(); name = zone.getName(); plantingArea = zone.getPlantingArea();
++    maximumDurationMinutes = zone.getMaximumDurationMinutes();
++    operationWindowStart = zone.getOperationWindowStart(); operationWindowEnd = zone.getOperationWindowEnd();
++    this.status = status;
++  }
++  public String getId() { return id; }
++  public String getName() { return name; }
++  public String getPlantingArea() { return plantingArea; }
++  public int getMaximumDurationMinutes() { return maximumDurationMinutes; }
++  public LocalTime getOperationWindowStart() { return operationWindowStart; }
++  public LocalTime getOperationWindowEnd() { return operationWindowEnd; }
++  public IrrigationZoneStatus getStatus() { return status; }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/resources/application-mysql.yml backend/src/main/resources/application-mysql.yml
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/resources/application-mysql.yml	1970-01-01 08:00:00
++++ backend/src/main/resources/application-mysql.yml	2026-09-14 15:46:28
+@@ -0,0 +1,9 @@
++spring:
++  datasource:
++    url: ${DB_URL:jdbc:mysql://localhost:3306/smart_farm?useUnicode=true&characterEncoding=utf8&serverTimezone=UTC}
++    username: ${DB_USERNAME:smart_farm}
++    password: ${DB_PASSWORD:}
++    driver-class-name: com.mysql.cj.jdbc.Driver
++  jpa:
++    hibernate:
++      ddl-auto: update
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/resources/application.yml backend/src/main/resources/application.yml
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/main/resources/application.yml	1970-01-01 08:00:00
++++ backend/src/main/resources/application.yml	2026-09-14 15:18:42
+@@ -0,0 +1,17 @@
++spring:
++  datasource:
++    url: ${H2_URL:jdbc:h2:mem:smart_farm;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
++    username: ${H2_USERNAME:sa}
++    password: ${H2_PASSWORD:}
++    driver-class-name: org.h2.Driver
++  jpa:
++    hibernate:
++      ddl-auto: update
++    open-in-view: false
++  h2:
++    console:
++      enabled: false
++
++server:
++  error:
++    include-message: never
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/test/java/com/campus/farm/ApplicationContextTest.java backend/src/test/java/com/campus/farm/ApplicationContextTest.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/test/java/com/campus/farm/ApplicationContextTest.java	1970-01-01 08:00:00
++++ backend/src/test/java/com/campus/farm/ApplicationContextTest.java	2026-09-14 15:17:48
+@@ -0,0 +1,14 @@
++package com.campus.farm;
++
++import static org.assertj.core.api.Assertions.assertThat;
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.context.ApplicationContext;
++
++@SpringBootTest
++class ApplicationContextTest {
++  @Autowired ApplicationContext context;
++
++  @Test void springContextStarts() { assertThat(context).isNotNull(); }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/test/java/com/campus/farm/DomainPersistenceTest.java backend/src/test/java/com/campus/farm/DomainPersistenceTest.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/test/java/com/campus/farm/DomainPersistenceTest.java	1970-01-01 08:00:00
++++ backend/src/test/java/com/campus/farm/DomainPersistenceTest.java	2026-09-14 15:53:17
+@@ -0,0 +1,45 @@
++package com.campus.farm;
++
++import static org.assertj.core.api.Assertions.assertThat;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import com.campus.farm.auth.User;
++import com.campus.farm.auth.UserRepository;
++import com.campus.farm.device.Device;
++import com.campus.farm.device.DeviceRepository;
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.transaction.annotation.Transactional;
++import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
++
++@SpringBootTest
++@Transactional
++class DomainPersistenceTest {
++  @Autowired UserRepository users;
++  @Autowired DeviceRepository devices;
++
++  @Test void seedCreatesDemoUsersAndDevices() {
++    User admin = users.findByUsername("admin").orElseThrow(AssertionError::new);
++    User operator = users.findByUsername("operator").orElseThrow(AssertionError::new);
++    assertThat(admin.getRole()).isEqualTo("ADMIN");
++    assertThat(new BCryptPasswordEncoder().matches("admin123", admin.getPasswordHash())).isTrue();
++    assertThat(operator.getRole()).isEqualTo("OPERATOR");
++    assertThat(new BCryptPasswordEncoder().matches("operator123", operator.getPasswordHash())).isTrue();
++
++    assertSeedDevice("PV-001", "Solar Array", "PHOTOVOLTAIC", "ONLINE");
++    assertSeedDevice("IRR-001", "Irrigation Controller", "IRRIGATION", "ONLINE");
++  }
++
++  @Test void passwordHashIsNeverSerialized() throws Exception {
++    String json = new ObjectMapper().writeValueAsString(new User("operator", "secret-hash", "OPERATOR"));
++    assertThat(json).doesNotContain("passwordHash").doesNotContain("secret-hash");
++  }
++
++  private void assertSeedDevice(String code, String name, String type, String status) {
++    Device device = devices.findByDeviceCode(code).orElseThrow(AssertionError::new);
++    assertThat(device.getDeviceCode()).isEqualTo(code);
++    assertThat(device.getName()).isEqualTo(name);
++    assertThat(device.getType()).isEqualTo(type);
++    assertThat(device.getStatus()).isEqualTo(status);
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/test/java/com/campus/farm/MysqlConfigurationTest.java backend/src/test/java/com/campus/farm/MysqlConfigurationTest.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/test/java/com/campus/farm/MysqlConfigurationTest.java	1970-01-01 08:00:00
++++ backend/src/test/java/com/campus/farm/MysqlConfigurationTest.java	2026-09-14 15:45:25
+@@ -0,0 +1,19 @@
++package com.campus.farm;
++
++import static org.assertj.core.api.Assertions.assertThat;
++import java.util.Properties;
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
++import org.springframework.core.io.ClassPathResource;
++
++class MysqlConfigurationTest {
++  @Test void mysqlProfileUsesDocumentedDatabaseEnvironmentVariables() {
++    YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
++    yaml.setResources(new ClassPathResource("application-mysql.yml"));
++    Properties properties = yaml.getObject();
++
++    assertThat(properties.getProperty("spring.datasource.url")).startsWith("${DB_URL:");
++    assertThat(properties.getProperty("spring.datasource.username")).startsWith("${DB_USERNAME:");
++    assertThat(properties.getProperty("spring.datasource.password")).startsWith("${DB_PASSWORD:");
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/test/java/com/campus/farm/auth/AuthenticationIntegrationTest.java backend/src/test/java/com/campus/farm/auth/AuthenticationIntegrationTest.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/test/java/com/campus/farm/auth/AuthenticationIntegrationTest.java	1970-01-01 08:00:00
++++ backend/src/test/java/com/campus/farm/auth/AuthenticationIntegrationTest.java	2026-09-14 16:02:29
+@@ -0,0 +1,72 @@
++package com.campus.farm.auth;
++
++import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
++import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
++import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
++import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
++
++import com.fasterxml.jackson.databind.JsonNode;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.http.MediaType;
++import org.springframework.test.web.servlet.MockMvc;
++import org.springframework.test.web.servlet.MvcResult;
++
++@SpringBootTest
++@AutoConfigureMockMvc
++class AuthenticationIntegrationTest {
++  @Autowired MockMvc mvc;
++  @Autowired ObjectMapper objectMapper;
++
++  @Test void loginReturnsOpaqueTokenAndSafeUser() throws Exception {
++    MvcResult result = mvc.perform(post("/api/auth/login")
++        .contentType(MediaType.APPLICATION_JSON)
++        .content("{\"username\":\"operator\",\"password\":\"operator123\"}"))
++        .andExpect(status().isOk())
++        .andExpect(jsonPath("$.token").isString())
++        .andExpect(jsonPath("$.user.username").value("operator"))
++        .andExpect(jsonPath("$.user.role").value("OPERATOR"))
++        .andExpect(jsonPath("$.user.passwordHash").doesNotExist())
++        .andReturn();
++    JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
++    String token = body.get("token").asText();
++    org.assertj.core.api.Assertions.assertThat(token).isNotBlank().doesNotContain("operator123");
++  }
++
++  @Test void loginRejectsInvalidPassword() throws Exception {
++    mvc.perform(post("/api/auth/login")
++        .contentType(MediaType.APPLICATION_JSON)
++        .content("{\"username\":\"operator\",\"password\":\"wrong\"}"))
++        .andExpect(status().isUnauthorized());
++  }
++
++  @Test void protectedEndpointRejectsMissingBearerToken() throws Exception {
++    mvc.perform(get("/api/auth/me")).andExpect(status().isUnauthorized());
++  }
++
++  @Test void protectedEndpointRejectsMalformedBearerToken() throws Exception {
++    mvc.perform(get("/api/auth/me").header("Authorization", "Bearer not-a-token"))
++        .andExpect(status().isUnauthorized());
++  }
++
++  @Test void adminEndpointRejectsOperatorAndAllowsAdmin() throws Exception {
++    String operatorToken = login("operator", "operator123");
++    mvc.perform(get("/api/auth/admin-test").header("Authorization", "Bearer " + operatorToken))
++        .andExpect(status().isForbidden());
++
++    String adminToken = login("admin", "admin123");
++    mvc.perform(get("/api/auth/admin-test").header("Authorization", "Bearer " + adminToken))
++        .andExpect(status().isOk());
++  }
++
++  private String login(String username, String password) throws Exception {
++    MvcResult result = mvc.perform(post("/api/auth/login")
++        .contentType(MediaType.APPLICATION_JSON)
++        .content("{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}"))
++        .andExpect(status().isOk()).andReturn();
++    return objectMapper.readTree(result.getResponse().getContentAsString()).get("token").asText();
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/test/java/com/campus/farm/integration/IntegrationSyncServiceTest.java backend/src/test/java/com/campus/farm/integration/IntegrationSyncServiceTest.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/test/java/com/campus/farm/integration/IntegrationSyncServiceTest.java	1970-01-01 08:00:00
++++ backend/src/test/java/com/campus/farm/integration/IntegrationSyncServiceTest.java	2026-09-14 16:43:16
+@@ -0,0 +1,164 @@
++package com.campus.farm.integration;
++
++import static org.assertj.core.api.Assertions.assertThat;
++
++import java.math.BigDecimal;
++import java.time.Clock;
++import java.time.Instant;
++import java.time.ZoneOffset;
++import java.util.Arrays;
++import java.util.Collections;
++import java.util.Map;
++import java.util.concurrent.atomic.AtomicInteger;
++import java.util.concurrent.CountDownLatch;
++import java.util.concurrent.ExecutorService;
++import java.util.concurrent.Executors;
++import java.util.concurrent.Future;
++import org.junit.jupiter.api.BeforeEach;
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.transaction.annotation.Transactional;
++import org.springframework.transaction.annotation.Propagation;
++
++@SpringBootTest(properties = "farm.integration.sync-enabled=false")
++@Transactional
++class IntegrationSyncServiceTest {
++  private static final Instant NOW = Instant.parse("2026-09-14T00:00:00Z");
++
++  @Autowired IntegrationSyncService syncService;
++  @Autowired LatestSnapshotRepository snapshots;
++  @Autowired SyncExecutionRepository executions;
++
++  @BeforeEach void clearIntegrationState() {
++    executions.deleteAll();
++    snapshots.deleteAll();
++  }
++
++  @Test void syncMapsPortSnapshotsAndPreservesBothTimestamps() {
++    SnapshotPort port = () -> Collections.singletonList(new ExternalSnapshot(
++        "FUSIONSOLAR", "PV-MAPPING", "powerKw", new BigDecimal("12.50"), NOW.minusSeconds(30)));
++
++    syncService.sync("fusion-solar", port);
++
++    LatestSnapshot saved = snapshots.findBySourceAndDeviceCodeAndMetric(
++        "FUSIONSOLAR", "PV-MAPPING", "powerKw").orElseThrow(AssertionError::new);
++    assertThat(saved.getValue()).isEqualByComparingTo("12.50");
++    assertThat(saved.getSourceTimestamp()).isEqualTo(NOW.minusSeconds(30));
++    assertThat(saved.getReceivedTimestamp()).isNotNull();
++    assertThat(executions.findTopByIntegrationOrderByStartedAtDesc("fusion-solar").orElseThrow(AssertionError::new)
++        .getStatus()).isEqualTo(SyncStatus.SUCCESS);
++  }
++
++  @Test void freshnessUsesSourceTimestampAndMarksOldDataDelayed() {
++    DataFreshness freshness = new SnapshotFreshness(Clock.fixed(NOW, ZoneOffset.UTC), 60)
++        .forSourceTimestamp(NOW.minusSeconds(61));
++
++    assertThat(freshness).isEqualTo(DataFreshness.DELAYED);
++  }
++
++  @Test void syncCapsRetriesAndPersistsFailedExecution() {
++    AtomicInteger calls = new AtomicInteger();
++    SnapshotPort unavailable = () -> {
++      calls.incrementAndGet();
++      throw new SnapshotRetrievalException("upstream unavailable");
++    };
++
++    syncService.sync("hydrawise", unavailable);
++
++    assertThat(calls.get()).isEqualTo(3);
++    SyncExecution execution = executions.findTopByIntegrationOrderByStartedAtDesc("hydrawise")
++        .orElseThrow(AssertionError::new);
++    assertThat(execution.getStatus()).isEqualTo(SyncStatus.FAILED);
++    assertThat(execution.getAttempts()).isEqualTo(3);
++    assertThat(execution.getErrorMessage()).contains("upstream unavailable");
++  }
++
++  @Test void syncDoesNotReplaceNewerSnapshotWithAnOlderSourceTimestamp() {
++    SnapshotPort current = () -> Collections.singletonList(new ExternalSnapshot(
++        "FUSIONSOLAR", "PV-STALE", "powerKw", new BigDecimal("12.50"), NOW));
++    SnapshotPort stale = () -> Collections.singletonList(new ExternalSnapshot(
++        "FUSIONSOLAR", "PV-STALE", "powerKw", new BigDecimal("2.00"), NOW.minusSeconds(60)));
++
++    syncService.sync("fusion-solar", current);
++    syncService.sync("fusion-solar", stale);
++
++    LatestSnapshot saved = snapshots.findBySourceAndDeviceCodeAndMetric(
++        "FUSIONSOLAR", "PV-STALE", "powerKw").orElseThrow(AssertionError::new);
++    assertThat(saved.getValue()).isEqualByComparingTo("12.50");
++    assertThat(saved.getSourceTimestamp()).isEqualTo(NOW);
++  }
++
++  @Test void syncRecordsNormalRuntimeFailuresWithoutEscaping() {
++    AtomicInteger calls = new AtomicInteger();
++    SnapshotPort brokenAdapter = () -> {
++      calls.incrementAndGet();
++      throw new IllegalStateException("adapter mapping failed");
++    };
++
++    syncService.sync("fusion-solar", brokenAdapter);
++
++    assertThat(calls.get()).isEqualTo(3);
++    SyncExecution execution = executions.findTopByIntegrationOrderByStartedAtDesc("fusion-solar")
++        .orElseThrow(AssertionError::new);
++    assertThat(execution.getStatus()).isEqualTo(SyncStatus.FAILED);
++    assertThat(execution.getAttempts()).isEqualTo(3);
++    assertThat(execution.getErrorMessage()).contains("adapter mapping failed");
++  }
++
++  @Test void portRegistryExposesNamedSnapshotPortAbstractions() {
++    NamedSnapshotPort fusion = new NamedSnapshotPort() {
++      public String integrationName() { return "fusion-solar"; }
++      public java.util.List<ExternalSnapshot> readSnapshots() { return Collections.emptyList(); }
++    };
++    NamedSnapshotPort hydrawise = new NamedSnapshotPort() {
++      public String integrationName() { return "hydrawise"; }
++      public java.util.List<ExternalSnapshot> readSnapshots() { return Collections.emptyList(); }
++    };
++
++    Map<String, SnapshotPort> ports = new IntegrationPortRegistry(Arrays.asList(fusion, hydrawise)).ports();
++
++    assertThat(ports).containsEntry("fusion-solar", fusion).containsEntry("hydrawise", hydrawise);
++  }
++
++  @Test
++  @Transactional(propagation = Propagation.NOT_SUPPORTED)
++  void concurrentTimestampUpdatesCannotLetAnOlderSourceTimestampWin() throws Exception {
++    String deviceCode = "PV-CONCURRENT";
++    snapshots.saveAndFlush(new LatestSnapshot(new ExternalSnapshot("FUSIONSOLAR", deviceCode,
++        "powerKw", new BigDecimal("1.00"), NOW.minusSeconds(90)), NOW));
++    CountDownLatch ready = new CountDownLatch(2);
++    CountDownLatch start = new CountDownLatch(1);
++    ExecutorService pool = Executors.newFixedThreadPool(2);
++    try {
++      Future<?> fresh = pool.submit(() -> updateAfterStart(ready, start, deviceCode,
++          new BigDecimal("12.50"), NOW));
++      Future<?> stale = pool.submit(() -> updateAfterStart(ready, start, deviceCode,
++          new BigDecimal("2.00"), NOW.minusSeconds(60)));
++      ready.await();
++      start.countDown();
++      fresh.get();
++      stale.get();
++    } finally {
++      pool.shutdownNow();
++    }
++
++    LatestSnapshot saved = snapshots.findBySourceAndDeviceCodeAndMetric(
++        "FUSIONSOLAR", deviceCode, "powerKw").orElseThrow(AssertionError::new);
++    assertThat(saved.getValue()).isEqualByComparingTo("12.50");
++    assertThat(saved.getSourceTimestamp()).isEqualTo(NOW);
++  }
++
++  private void updateAfterStart(CountDownLatch ready, CountDownLatch start, String deviceCode,
++      BigDecimal value, Instant sourceTimestamp) {
++    ready.countDown();
++    try {
++      start.await();
++    } catch (InterruptedException interrupted) {
++      Thread.currentThread().interrupt();
++      throw new AssertionError(interrupted);
++    }
++    syncService.sync("concurrent", () -> Collections.singletonList(new ExternalSnapshot("FUSIONSOLAR",
++        deviceCode, "powerKw", value, sourceTimestamp)));
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/test/java/com/campus/farm/irrigation/IrrigationControllerIntegrationTest.java backend/src/test/java/com/campus/farm/irrigation/IrrigationControllerIntegrationTest.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/test/java/com/campus/farm/irrigation/IrrigationControllerIntegrationTest.java	1970-01-01 08:00:00
++++ backend/src/test/java/com/campus/farm/irrigation/IrrigationControllerIntegrationTest.java	2026-09-14 20:13:12
+@@ -0,0 +1,73 @@
++package com.campus.farm.irrigation;
++
++import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
++import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
++
++import com.campus.farm.audit.AuditRecordRepository;
++import com.fasterxml.jackson.databind.JsonNode;
++import com.fasterxml.jackson.databind.ObjectMapper;
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.http.MediaType;
++import org.springframework.test.web.servlet.MockMvc;
++import org.springframework.test.web.servlet.MvcResult;
++
++@SpringBootTest(properties = "farm.integration.sync-enabled=false")
++@AutoConfigureMockMvc
++class IrrigationControllerIntegrationTest {
++  @Autowired MockMvc mvc;
++  @Autowired ObjectMapper objectMapper;
++  @Autowired AuditRecordRepository audits;
++  @Autowired IrrigationRunRepository runs;
++
++  @Test void controlEndpointAllowsOperatorAndRejectsBadDuration() throws Exception {
++    mvc.perform(post("/api/irrigation/zone-1/start")
++        .header("Authorization", "Bearer " + login("operator", "operator123"))
++        .contentType(MediaType.APPLICATION_JSON).content("{\"durationMinutes\":0,\"reason\":\"dry soil\"}"))
++        .andExpect(status().isBadRequest());
++  }
++
++  @Test void rejectedHttpCommandStillPersistsRunAndAuditRecords() throws Exception {
++    long auditCount = audits.count();
++    long runCount = runs.count();
++
++    mvc.perform(post("/api/irrigation/zone-1/start")
++        .header("Authorization", "Bearer " + login("operator", "operator123"))
++        .contentType(MediaType.APPLICATION_JSON).content("{\"durationMinutes\":0,\"reason\":\"dry soil\"}"))
++        .andExpect(status().isBadRequest());
++
++    org.assertj.core.api.Assertions.assertThat(audits.count()).isEqualTo(auditCount + 1);
++    org.assertj.core.api.Assertions.assertThat(runs.count()).isEqualTo(runCount + 1);
++  }
++
++  @Test void unsupportedActionStillPersistsRunAndAuditRecords() throws Exception {
++    long auditCount = audits.count();
++    long runCount = runs.count();
++
++    mvc.perform(post("/api/irrigation/zone-1/invalid")
++        .header("Authorization", "Bearer " + login("operator", "operator123"))
++        .contentType(MediaType.APPLICATION_JSON).content("{\"durationMinutes\":15,\"reason\":\"dry soil\"}"))
++        .andExpect(status().isBadRequest());
++
++    org.assertj.core.api.Assertions.assertThat(audits.count()).isEqualTo(auditCount + 1);
++    org.assertj.core.api.Assertions.assertThat(runs.count()).isEqualTo(runCount + 1);
++    org.assertj.core.api.Assertions.assertThat(audits.findAll().get((int) auditCount).getAction()).isEqualTo("INVALID");
++  }
++
++  @Test void controlEndpointRejectsViewerRole() throws Exception {
++    mvc.perform(post("/api/irrigation/zone-1/start")
++        .header("Authorization", "Bearer " + login("viewer", "view123"))
++        .contentType(MediaType.APPLICATION_JSON).content("{\"durationMinutes\":15,\"reason\":\"dry soil\"}"))
++        .andExpect(status().isForbidden());
++  }
++
++  private String login(String username, String password) throws Exception {
++    MvcResult result = mvc.perform(post("/api/auth/login").contentType(MediaType.APPLICATION_JSON)
++        .content("{\"username\":\"" + username + "\",\"password\":\"" + password + "\"}"))
++        .andExpect(status().isOk()).andReturn();
++    JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
++    return body.get("token").asText();
++  }
++}
+diff -ruN --exclude=target /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/test/java/com/campus/farm/irrigation/IrrigationOperationServiceTest.java backend/src/test/java/com/campus/farm/irrigation/IrrigationOperationServiceTest.java
+--- /var/folders/5w/0gmd2c_n6sq0hpyd0jp9z9th0000gn/T/tmp.f3Z9LOg7s1/src/test/java/com/campus/farm/irrigation/IrrigationOperationServiceTest.java	1970-01-01 08:00:00
++++ backend/src/test/java/com/campus/farm/irrigation/IrrigationOperationServiceTest.java	2026-09-14 17:07:22
+@@ -0,0 +1,145 @@
++package com.campus.farm.irrigation;
++
++import static org.assertj.core.api.Assertions.assertThat;
++import static org.assertj.core.api.Assertions.assertThatThrownBy;
++
++import com.campus.farm.audit.AuditRecordRepository;
++import java.time.Clock;
++import java.time.Instant;
++import java.time.LocalTime;
++import java.time.ZoneOffset;
++import java.util.Arrays;
++import java.util.Collections;
++import java.util.HashMap;
++import java.util.Map;
++import org.junit.jupiter.api.BeforeEach;
++import org.junit.jupiter.api.Test;
++import org.springframework.beans.factory.annotation.Autowired;
++import org.springframework.boot.test.context.SpringBootTest;
++import org.springframework.transaction.annotation.Transactional;
++
++@SpringBootTest(properties = "farm.integration.sync-enabled=false")
++@Transactional
++class IrrigationOperationServiceTest {
++  private static final Clock NOON = Clock.fixed(Instant.parse("2026-09-14T12:00:00Z"), ZoneOffset.UTC);
++
++  @Autowired IrrigationZoneRepository zones;
++  @Autowired IrrigationRunRepository runs;
++  @Autowired AuditRecordRepository audits;
++
++  private RecordingPort port;
++  private IrrigationService service;
++
++  @BeforeEach void setUp() {
++    audits.deleteAll();
++    runs.deleteAll();
++    zones.deleteAll();
++    zones.save(new IrrigationZone("north", "North field", "Vegetable beds", 30,
++        LocalTime.of(6, 0), LocalTime.of(18, 0)));
++    zones.save(new IrrigationZone("south", "South field", "Orchard", 20,
++        LocalTime.of(6, 0), LocalTime.of(18, 0)));
++    port = new RecordingPort();
++    service = new IrrigationService(zones, runs, new com.campus.farm.audit.AuditService(audits),
++        port, new IrrigationOperationPolicy(NOON));
++  }
++
++  @Test void rejectsNonPositiveStartDurationAsBadRequestAndAuditsOutcome() {
++    assertThatThrownBy(() -> service.command("operator", "OPERATOR", "north", "start", 0, "dry soil"))
++        .isInstanceOf(IrrigationBadRequestException.class);
++
++    assertThat(runs.findAll()).singleElement().satisfies(run -> {
++      assertThat(run.getCommandResult()).isEqualTo("REJECTED");
++      assertThat(run.getConfirmation()).isEqualTo("NOT_SENT");
++    });
++    assertThat(audits.findAll()).singleElement().satisfies(audit -> {
++      assertThat(audit.getActor()).isEqualTo("operator");
++      assertThat(audit.getAction()).isEqualTo("START");
++      assertThat(audit.getCommandResult()).isEqualTo("REJECTED");
++    });
++  }
++
++  @Test void rejectsDurationAbovePerZoneMaximumAsConflict() {
++    assertThatThrownBy(() -> service.command("operator", "OPERATOR", "north", "start", 31, "dry soil"))
++        .isInstanceOf(IrrigationConflictException.class);
++
++    assertThat(port.commands).isEmpty();
++    assertThat(runs.findAll()).singleElement().extracting(IrrigationRun::getCommandResult)
++        .isEqualTo("REJECTED");
++  }
++
++  @Test void rejectsStartOutsideConfiguredOperationWindowAsConflict() {
++    IrrigationService afterHours = new IrrigationService(zones, runs,
++        new com.campus.farm.audit.AuditService(audits), port,
++        new IrrigationOperationPolicy(Clock.fixed(Instant.parse("2026-09-14T20:00:00Z"), ZoneOffset.UTC)));
++
++    assertThatThrownBy(() -> afterHours.command("operator", "OPERATOR", "north", "start", 15, "dry soil"))
++        .isInstanceOf(IrrigationConflictException.class);
++
++    assertThat(port.commands).isEmpty();
++  }
++
++  @Test void rejectsStartWhenAnotherZoneIsRunningAsConflict() {
++    port.statuses.put("south", IrrigationZoneStatus.RUNNING);
++
++    assertThatThrownBy(() -> service.command("operator", "OPERATOR", "north", "start", 15, "dry soil"))
++        .isInstanceOf(IrrigationConflictException.class);
++
++    assertThat(port.commands).isEmpty();
++  }
++
++  @Test void rejectsViewerControlAsForbiddenAndAuditsOutcome() {
++    assertThatThrownBy(() -> service.command("viewer", "VIEWER", "north", "start", 15, "dry soil"))
++        .isInstanceOf(IrrigationForbiddenException.class);
++
++    assertThat(port.commands).isEmpty();
++    assertThat(audits.findAll()).singleElement().satisfies(audit -> {
++      assertThat(audit.getActor()).isEqualTo("viewer");
++      assertThat(audit.getCommandResult()).isEqualTo("REJECTED");
++    });
++  }
++
++  @Test void confirmsStatusAfterCommandInsteadOfTreatingDispatchAsExecution() {
++    IrrigationCommandResult result = service.command("admin", "ADMIN", "north", "start", 15, "dry soil");
++
++    assertThat(port.reads).containsExactly("north", "north");
++    assertThat(result.getCommandResult()).isEqualTo("ACCEPTED");
++    assertThat(result.getConfirmation()).isEqualTo("CONFIRMED");
++    assertThat(runs.findAll()).singleElement().satisfies(run -> {
++      assertThat(run.getActor()).isEqualTo("admin");
++      assertThat(run.getAction()).isEqualTo("START");
++      assertThat(run.getParameterSummary()).contains("durationMinutes=15").contains("reason=dry soil");
++      assertThat(run.getCommandResult()).isEqualTo("ACCEPTED");
++      assertThat(run.getConfirmation()).isEqualTo("CONFIRMED");
++    });
++    assertThat(audits.findAll()).singleElement().satisfies(audit -> {
++      assertThat(audit.getTarget()).isEqualTo("north");
++      assertThat(audit.getAction()).isEqualTo("START");
++      assertThat(audit.getConfirmation()).isEqualTo("CONFIRMED");
++    });
++  }
++
++  private static final class RecordingPort implements IrrigationCommandPort {
++    private final Map<String, IrrigationZoneStatus> statuses = new HashMap<>();
++    private final java.util.List<String> reads = new java.util.ArrayList<>();
++    private final java.util.List<IrrigationCommand> commands = new java.util.ArrayList<>();
++
++    public IrrigationZoneStatus readStatus(String zoneId) {
++      reads.add(zoneId);
++      return statuses.getOrDefault(zoneId, IrrigationZoneStatus.IDLE);
++    }
++
++    public java.util.List<IrrigationZoneState> readAllStatuses() {
++      return Arrays.asList(new IrrigationZoneState("north", statuses.getOrDefault("north", IrrigationZoneStatus.IDLE)),
++          new IrrigationZoneState("south", statuses.getOrDefault("south", IrrigationZoneStatus.IDLE)));
++    }
++
++    public IrrigationDispatchResult dispatch(IrrigationCommand command) {
++      commands.add(command);
++      if (command.getAction() == IrrigationAction.START) statuses.put(command.getZoneId(), IrrigationZoneStatus.RUNNING);
++      if (command.getAction() == IrrigationAction.STOP || command.getAction() == IrrigationAction.PAUSE) {
++        statuses.put(command.getZoneId(), IrrigationZoneStatus.PAUSED);
++      }
++      return IrrigationDispatchResult.accepted("demo-dispatch");
++    }
++  }
++}

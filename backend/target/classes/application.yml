@@ -1,0 +1,17 @@
+spring:
+  datasource:
+    url: ${H2_URL:jdbc:h2:mem:smart_farm;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    username: ${H2_USERNAME:sa}
+    password: ${H2_PASSWORD:}
+    driver-class-name: org.h2.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+  h2:
+    console:
+      enabled: false
+
+server:
+  error:
+    include-message: never
